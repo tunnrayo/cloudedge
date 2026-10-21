@@ -1,46 +1,74 @@
+/**
+ * POST /api/inquiry — receives the Contact and Request-a-Quote forms.
+ * Steps: rate limit -> parse -> honeypot -> validate -> save (if storage configured) -> email (if configured).
+ * The visitor is only told "received" if the inquiry was actually saved or emailed.
+ */
 import { NextResponse } from "next/server";
 import { normalize, validate } from "@/lib/validate";
 import { company } from "@/lib/site";
+import { getStore } from "@/lib/inquiries";
+import { emailConfigured, sendInquiryEmail } from "@/lib/email";
+import { clientIp, rateLimited } from "@/lib/rate-limit";
+import { getProduct } from "@/lib/catalog";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
-// Simple per-instance rate limit (5 requests / 10 min / IP). Resets on restart; see ARCHITECTURE.md.
-const hits = new Map<string, number[]>();
-function limited(ip: string) {
-  const now = Date.now(), window = 10 * 60 * 1000;
-  const recent = (hits.get(ip) ?? []).filter((t) => now - t < window);
-  recent.push(now); hits.set(ip, recent);
-  if (hits.size > 5000) hits.clear();
-  return recent.length > 5;
-}
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+const fail = (status: number, error: string, extra: object = {}) => NextResponse.json({ ok: false, error, ...extra }, { status });
+const fallback = `Please email us directly at ${company.email}.`;
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  if (limited(ip)) return NextResponse.json({ ok: false, error: "Too many requests. Please try again in a few minutes." }, { status: 429 });
+  // Block cross-site form posts from other websites.
+  const origin = req.headers.get("origin");
+  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
+  if (origin && host) {
+    let originHost = "";
+    try { originHost = new URL(origin).host; } catch { /* malformed origin */ }
+    if (originHost !== host) return fail(403, "Request blocked.");
+  }
+
+  if (rateLimited(`inq:${clientIp(req.headers)}`, 5, 10 * 60_000)) return fail(429, "Too many messages sent in a short time. Please wait a few minutes and try again.");
+  if (Number(req.headers.get("content-length") ?? 0) > 20_000) return fail(413, "Your message is too long.");
 
   let body: unknown;
-  try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 }); }
-  const input = normalize(body);
-  if (input.website) return NextResponse.json({ ok: true }); // honeypot: silently drop bots
-  const errors = validate(input);
-  if (Object.keys(errors).length) return NextResponse.json({ ok: false, error: "Please correct the highlighted fields.", errors }, { status: 422 });
+  try { body = await req.json(); } catch { return fail(400, "Invalid request."); }
 
-  const key = process.env.RESEND_API_KEY, from = process.env.INQUIRY_FROM_EMAIL;
-  if (!key || !from) {
-    return NextResponse.json({ ok: false, error: `Online sending is not configured yet, so your message was NOT sent. Please email ${company.email} directly.` }, { status: 503 });
+  const input = normalize(body);
+  if (input.website) return NextResponse.json({ ok: true }); // honeypot filled: quietly ignore bots
+
+  const errors = validate(input);
+  if (input.product && !(await getProduct(input.product))) errors.product = "Unknown product.";
+  if (Object.keys(errors).length) return fail(422, "Please correct the highlighted fields.", { errors });
+
+  const store = getStore();
+  if (!store && !emailConfigured()) {
+    console.error("[inquiry] no storage and no email configured — inquiry NOT received");
+    return fail(503, `Online messages are not set up on this website yet, so your message was NOT sent. ${fallback}`);
   }
-  const to = process.env.INQUIRY_TO_EMAIL || company.email;
-  const rows: [string, string][] = [["Type", input.mode === "quote" ? "Project inquiry" : "Contact"], ["Name", input.name], ["Email", input.email], ["Organization", input.organization || "-"], ["Inquiry", input.type], ["Budget", input.budget || "-"], ["Scope", input.scope || "-"], ["Message", input.message]];
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST", headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to: [to], reply_to: input.email, subject: `[Website] ${input.type} from ${input.name}`,
-        html: rows.map(([k, v]) => `<p><strong>${k}:</strong><br>${esc(v).replace(/\n/g, "<br>")}</p>`).join("") }),
-    });
-    if (!res.ok) { console.error("Email provider rejected request, status", res.status); throw new Error("provider"); }
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ ok: false, error: `We could not send your message right now. Please email ${company.email} directly.` }, { status: 502 });
+
+  // 1) Save
+  let saved: Awaited<ReturnType<NonNullable<typeof store>["create"]>> | null = null;
+  if (store) {
+    try {
+      const { website: _honeypot, ...data } = input;
+      void _honeypot;
+      saved = await store.create(data);
+    } catch (e) {
+      console.error("[inquiry] storage failed:", (e as Error).message);
+    }
   }
+
+  // 2) Notify by email
+  const emailResult = await sendInquiryEmail(input, saved?.reference);
+  if (saved && emailResult !== "not_configured") {
+    await store!.setEmailStatus(saved.id, emailResult).catch(() => {});
+  }
+
+  if (saved) return NextResponse.json({ ok: true, reference: saved.reference });
+  if (emailResult === "sent") return NextResponse.json({ ok: true });
+  return fail(502, `We could not deliver your message right now, so it was NOT sent. ${fallback}`);
+}
+
+export function GET() {
+  return fail(405, "Method not allowed.");
 }

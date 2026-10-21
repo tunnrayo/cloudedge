@@ -1,10 +1,31 @@
+/**
+ * SITE CONTENT AND SETTINGS — the main file to edit when wording changes.
+ * Company facts below are the confirmed source of truth. Do not change them without instruction.
+ * Imports in this file use ".ts" extensions so the unit tests can run with plain Node.
+ */
+
 export const company = {
   name: "Cloud Edge Technology Services Limited",
   short: "Cloud Edge",
   rc: "9922715",
-  email: "CLOUDEDGETECHSERVICES@GMAIL.COM",
+  email: "CLOUDEDGETECHNOLOGYSERVICES@GMAIL.COM",
   address: ["Suite 306B, Samfa Plaza", "Ndola Crescent, Wuse Zone 5", "Abuja, FCT, Nigeria"],
-  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000",
+  addressParts: { street: "Suite 306B, Samfa Plaza, Ndola Crescent", locality: "Wuse Zone 5, Abuja", region: "FCT", country: "NG" },
+  siteUrl: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, ""),
+  tagline: "Software, applications, e-commerce and internet services from Abuja, Nigeria.",
+  description:
+    "Cloud Edge Technology Services Limited is a Nigerian technology and e-commerce company focused on software development, web and mobile applications, internet-related services, digital products and technology solutions.",
+};
+
+/** Social profiles. Empty on purpose: no official accounts have been supplied. Add {label, href} items when they exist. */
+export const social: { label: string; href: string }[] = [];
+
+/** Website behaviour switches. */
+export const settings = {
+  /** Show the clearly labelled SAMPLE product listings. Set to false once real products are added. */
+  showSampleProducts: true,
+  /** Show the clearly labelled DEMO portfolio concepts. Set to false once real, approved projects are added. */
+  showDemoProjects: true,
 };
 
 export const nav = [
@@ -12,55 +33,133 @@ export const nav = [
   { href: "/about", label: "About" },
   { href: "/services", label: "Services" },
   { href: "/solutions", label: "Solutions" },
+  { href: "/products", label: "Products" },
+  { href: "/portfolio", label: "Portfolio" },
   { href: "/contact", label: "Contact" },
 ];
 
 export type Service = {
-  slug: string; title: string; icon: string; summary: string; problem: string; what: string; items: string[];
+  slug: string;
+  title: string;
+  icon: string;
+  summary: string;
+  problem: string;
+  what: string;
+  items: string[];
+  goodFor: string[];
+  inquiryType: string;
 };
 
-// Proposed service categories. Each needs business confirmation before being treated as an active offering.
+// Proposed service categories based on the company's registered business purpose.
+// Each one needs business confirmation before being treated as an active, staffed offering.
 export const services: Service[] = [
-  { slug: "software-development", title: "Software Development", icon: "code",
+  {
+    slug: "software-development", title: "Software Development", icon: "code", inquiryType: "Software development",
     summary: "Custom software built around how your business actually works.",
-    problem: "Off-the-shelf tools often force a business to change its processes to fit the software.",
-    what: "We plan and build software tailored to your workflow, from internal tools to customer-facing systems.",
-    items: ["Requirements discussion and scoping", "Custom business applications", "Integration with tools you already use", "Handover and documentation"] },
-  { slug: "web-development", title: "Website Design & Development", icon: "globe",
+    problem: "Off-the-shelf tools often force a business to change its processes to fit the software, or leave important work in spreadsheets and paper files.",
+    what: "We plan and build software tailored to your workflow, from internal tools for your team to customer-facing systems, with documentation so it can be maintained.",
+    items: ["Requirements discussion and scoping", "Custom business applications and internal tools", "Integration with tools you already use", "Testing, handover and documentation"],
+    goodFor: ["Businesses outgrowing spreadsheets", "Teams with a repeated manual process", "Organisations needing a specific internal system"],
+  },
+  {
+    slug: "web-development", title: "Website Design & Development", icon: "globe", inquiryType: "Website design & development",
     summary: "Clear, fast, mobile-friendly websites that present your business properly.",
-    problem: "Many customers judge a business by its website before they ever make contact.",
+    problem: "Many customers judge a business by its website before they ever make contact. An outdated or broken site loses enquiries.",
     what: "We design and build responsive websites with clear structure, working contact routes and search-friendly foundations.",
-    items: ["Company and brand websites", "Landing pages", "Content structure and navigation", "Accessibility and SEO basics"] },
-  { slug: "application-development", title: "Web & Mobile Applications", icon: "phone",
-    summary: "Web and mobile applications for businesses and organizations.",
-    problem: "Manual or paper-based processes slow teams down and make growth harder to manage.",
-    what: "We scope and build web and mobile applications that digitize a defined process or serve a defined audience.",
-    items: ["Web applications", "Mobile application development", "User accounts and dashboards", "Ongoing improvement planning"] },
-  { slug: "ecommerce", title: "E-Commerce Solutions", icon: "cart",
+    items: ["Company and brand websites", "Landing pages for campaigns", "Content structure and navigation", "Accessibility and SEO foundations"],
+    goodFor: ["New businesses needing a first website", "Companies replacing an outdated site", "Campaigns needing a focused landing page"],
+  },
+  {
+    slug: "application-development", title: "Web Applications", icon: "layers", inquiryType: "Web application",
+    summary: "Browser-based applications, portals and dashboards for your team or customers.",
+    problem: "Manual processes, scattered information and back-and-forth messaging slow teams down and make growth harder to manage.",
+    what: "We scope and build web applications that digitise a defined process: customer portals, booking systems, dashboards and admin tools.",
+    items: ["Customer and staff portals", "User accounts and role-based access", "Dashboards and reporting", "Ongoing improvement planning"],
+    goodFor: ["Service businesses managing bookings or requests", "Organisations needing a member or customer portal", "Teams needing a shared dashboard"],
+  },
+  {
+    slug: "mobile-app-development", title: "Mobile App Development", icon: "phone", inquiryType: "Mobile application",
+    summary: "Mobile applications that put your service in your customers' hands.",
+    problem: "Some services work best on a phone: ordering, booking, tracking or staying in touch with customers on the move.",
+    what: "We help define the right mobile approach for your audience and budget, then design and build the application and the systems behind it.",
+    items: ["Mobile app planning and scoping", "Android and iOS approaches", "Connecting the app to a web dashboard or backend", "App store preparation guidance"],
+    goodFor: ["Businesses whose customers mainly use phones", "Delivery, booking and ordering services", "Field teams that need a mobile tool"],
+  },
+  {
+    slug: "ecommerce", title: "E-Commerce Solutions", icon: "cart", inquiryType: "E-commerce solution",
     summary: "Online stores that are straightforward for customers to use and for you to manage.",
-    problem: "Selling online needs more than a product list: catalogue, ordering, and reliable follow-up.",
+    problem: "Selling online needs more than a product list: a clear catalogue, a reliable ordering flow and simple follow-up.",
     what: "We set up online stores and ordering flows suited to your products and the payment options available to you.",
-    items: ["Store setup and catalogue structure", "Order and inquiry flows", "Payment integration where required", "Store management guidance"] },
-  { slug: "internet-services", title: "Internet-Related Services", icon: "cloud",
-    summary: "Domains, hosting and web infrastructure support for getting and staying online.",
-    problem: "Setting up domains, hosting and email can be confusing and easy to get wrong.",
-    what: "We help organizations choose and configure the web infrastructure their website or application needs.",
-    items: ["Domain and DNS setup", "Hosting selection and deployment", "Business email configuration", "Basic security hygiene"] },
-  { slug: "digital-products", title: "Digital Products & Technology Solutions", icon: "gear",
-    summary: "Digital tools, platforms and technology solutions for business processes.",
-    problem: "Businesses often know the outcome they want but not which technology fits.",
-    what: "We help define, build and support digital products and technical solutions, including technical consulting where it is a good fit.",
-    items: ["Solution discovery", "Digital product planning", "Technical consulting", "Support planning"] },
+    items: ["Store setup and catalogue structure", "Order and enquiry flows", "Payment integration where required", "Store management guidance"],
+    goodFor: ["Retailers moving online", "Brands selling through social media who need a proper store", "Businesses taking orders by phone or chat"],
+  },
+  {
+    slug: "internet-services", title: "Internet-Related Services", icon: "cloud", inquiryType: "Internet-related services",
+    summary: "Domains, hosting, business email and web infrastructure support.",
+    problem: "Setting up domains, hosting and professional email can be confusing and easy to get wrong.",
+    what: "We help organisations choose and configure the web infrastructure their website or application needs, and keep it in order.",
+    items: ["Domain and DNS setup", "Hosting selection and deployment", "Business email configuration", "Basic security hygiene and backups"],
+    goodFor: ["Businesses still using personal email addresses", "Organisations moving hosting provider", "Anyone launching a new website or app"],
+  },
+  {
+    slug: "digital-products", title: "Digital Products", icon: "box", inquiryType: "Digital product",
+    summary: "Digital tools, platforms and resources that help businesses grow.",
+    problem: "Businesses often need ready-to-use digital tools but find generic options don't fit their market or way of working.",
+    what: "We plan, build and support digital products — from software tools to digital resources — designed for clearly defined users.",
+    items: ["Digital product planning", "Design and development", "Launch and distribution guidance", "Updates and support planning"],
+    goodFor: ["Businesses with a product idea to validate", "Organisations that need a reusable digital tool", "Creators packaging expertise digitally"],
+  },
+  {
+    slug: "technology-consulting", title: "Technology Solutions & Consulting", icon: "compass", inquiryType: "Technology consulting",
+    summary: "Practical advice on choosing, planning and improving the technology you use.",
+    problem: "Businesses often know the outcome they want but not which technology fits, what it should cost or how to start.",
+    what: "We help you define the problem, compare options and plan a realistic technology approach before money is committed to building.",
+    items: ["Solution discovery and requirements", "Technology and vendor options review", "Digital process improvement", "Project planning and estimates"],
+    goodFor: ["Owners planning a digital project", "Teams choosing between software options", "Organisations reviewing existing systems"],
+  },
+];
+
+/** Solution areas = business problems the services combine to solve. Not products. */
+export const solutions = [
+  { icon: "globe", title: "Credible online presence", text: "A professional website, domain and business email so customers can find, trust and contact you.", services: ["web-development", "internet-services"] },
+  { icon: "cart", title: "Selling and taking orders online", text: "Catalogues, ordering and enquiry flows that turn interest into orders you can follow up.", services: ["ecommerce", "web-development"] },
+  { icon: "layers", title: "Digitising manual processes", text: "Replace paper forms, spreadsheets and chat threads with a system your team can rely on.", services: ["software-development", "application-development"] },
+  { icon: "users", title: "Customer portals and bookings", text: "Let customers book, request, track or manage their account without phoning or messaging.", services: ["application-development", "mobile-app-development"] },
+  { icon: "chart", title: "Dashboards and reporting", text: "Bring scattered information into one view so decisions are based on current numbers.", services: ["software-development", "application-development"] },
+  { icon: "compass", title: "Planning a technology project", text: "Clarify requirements, options and budget before you commit to building anything.", services: ["technology-consulting", "digital-products"] },
+];
+
+export const processSteps = [
+  { title: "Discuss", text: "You tell us about the problem, goals and timing through the inquiry form or by email." },
+  { title: "Scope", text: "We agree in writing what will be built, how it will work, what it needs and what it will cost." },
+  { title: "Build", text: "We design and develop in stages, sharing progress so you can give feedback early." },
+  { title: "Launch & support", text: "We deploy, hand over documentation and agree how ongoing support will work." },
+];
+
+export const values = [
+  { icon: "bulb", title: "Practical innovation", text: "We use modern technology where it solves a real business problem." },
+  { icon: "shield", title: "Security-minded", text: "We collect only the data a service needs and protect it sensibly." },
+  { icon: "users", title: "Customer focused", text: "Plain language, clear scope and regular updates throughout." },
+  { icon: "globe", title: "Open to the world", text: "Based in Abuja and open to Nigerian and international clients." },
 ];
 
 export const faqs = [
   { q: "What does Cloud Edge do?", a: "Cloud Edge Technology Services Limited is a Nigerian technology and e-commerce company focused on software, web and mobile application development, internet-related services, digital products and technology solutions." },
-  { q: "How do I start a project?", a: "Send a project inquiry using the quote form, describing what you need. We will respond to discuss scope and next steps." },
+  { q: "How do I start a project?", a: "Send a project inquiry using the Request a Quote form, describing what you need. We will reply by email to discuss scope and next steps." },
   { q: "Do I need to know my budget?", a: "No. The budget field is optional. A rough range helps us suggest a realistic approach, but you can leave it blank." },
+  { q: "Can you give a fixed price immediately?", a: "Pricing depends on scope. We prefer to understand your requirements first, then provide a written estimate." },
+  { q: "Are the products on this website available to buy now?", a: "Not yet. The product listings currently shown are clearly labelled samples that demonstrate how products will be presented. Real products and prices will be published when they are ready. You are welcome to enquire about similar work." },
   { q: "Where are you located?", a: "Our registered address is Suite 306B, Samfa Plaza, Ndola Crescent, Wuse Zone 5, Abuja, FCT, Nigeria." },
   { q: "Do you work with clients outside Nigeria?", a: "We welcome inquiries from Nigerian and international clients. Send the details of your project and we will discuss what is practical." },
-  { q: "Can you give a fixed price immediately?", a: "Pricing depends on scope. We prefer to understand your requirements first, then discuss costs." },
+  { q: "What happens to the information I send?", a: "It is used only to respond to your inquiry. See the Privacy Policy for details of what is stored and for how long." },
 ];
 
-export const inquiryTypes = ["General inquiry", "Software development", "Website design & development", "Web or mobile application", "E-commerce solution", "Internet-related services", "Digital product or technology solution", "Partnership", "Other"];
+export const inquiryTypes = [
+  "General inquiry",
+  ...services.map((s) => s.inquiryType),
+  "Product enquiry",
+  "Partnership",
+  "Other",
+];
 export const budgetRanges = ["Prefer not to say", "Under ₦500,000", "₦500,000 – ₦2,000,000", "₦2,000,000 – ₦5,000,000", "Above ₦5,000,000", "Not sure yet"];
+export const timelines = ["As soon as possible", "Within 1 month", "1 – 3 months", "3 – 6 months", "Flexible / not sure"];

@@ -13,10 +13,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="admin-shell">
       <header className="admin-top">
         <div className="container">
-          <Link href="/admin">{company.short} · Inquiries admin</Link>
+          <Link href="/admin">{company.short} · Admin</Link>
           <nav aria-label="Admin">
+            {signedIn && <><Link href="/admin">Dashboard</Link><Link href="/admin/orders">Orders</Link><Link href="/admin/orders?queue=sourcing">Sourcing queue</Link><Link href="/admin/products">Products</Link><Link href="/admin/inquiries">Inquiries</Link></>}
             <Link href="/">View website</Link>
-            {signedIn && <Link href="/admin/export">Export CSV</Link>}
             {signedIn && <form action={logout}><button type="submit">Sign out</button></form>}
           </nav>
         </div>

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Svg } from "@/components/Icon";
 import { PageHero } from "@/components/ui";
 import { faqs, services, solutions } from "@/lib/site";
-import { getProducts } from "@/lib/catalog";
+import { listProducts, priceLabel } from "@/lib/shop/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = { title: "Search", description: "Search the Cloud Edge website.", robots: { index: false } };
 
@@ -20,11 +22,10 @@ const pages: Result[] = [
 export default async function Search({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const q = ((await searchParams).q ?? "").trim().slice(0, 100);
   const terms = q.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
-  const products = await getProducts();
+  const products = terms.length ? await listProducts({ q }).catch(() => []) : [];
   const all: Result[] = [
     ...services.map((s) => ({ kind: "Service", title: s.title, text: s.summary, href: `/services/${s.slug}`, body: [s.problem, s.what, ...s.items].join(" ") })),
     ...solutions.map((s) => ({ kind: "Solution", title: s.title, text: s.text, href: "/solutions" })),
-    ...products.map((p) => ({ kind: p.sample ? "Product (sample)" : "Product", title: p.name, text: p.summary, href: `/products/${p.slug}`, body: [p.category, ...p.features].join(" ") })),
     ...faqs.map((f) => ({ kind: "FAQ", title: f.q, text: f.a, href: "/faq" })),
     ...pages,
   ];
@@ -39,6 +40,8 @@ export default async function Search({ searchParams }: { searchParams: Promise<{
         .sort((a, b) => b.score - a.score)
         .map((x) => x.r)
     : [];
+  // Product matches come from the database search and are listed first.
+  results.unshift(...products.slice(0, 20).map((p) => ({ kind: `Product · ${p.category}`, title: p.name, text: `${priceLabel(p)} — ${p.description}`, href: `/products/${p.slug}` })));
 
   return (
     <>
@@ -47,7 +50,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<{
         <div className="container narrow">
           <form className="search-form" action="/search" method="get" role="search">
             <label htmlFor="q" className="sr-only">Search for</label>
-            <input id="q" name="q" type="search" defaultValue={q} placeholder="e.g. website, mobile app, e-commerce" autoFocus maxLength={100} />
+            <input id="q" name="q" type="search" defaultValue={q} placeholder="e.g. Microsoft 365, antivirus, website" autoFocus maxLength={100} />
             <button className="btn btn-primary" type="submit"><Svg name="search" /> Search</button>
           </form>
           <div style={{ marginTop: 32 }} aria-live="polite">

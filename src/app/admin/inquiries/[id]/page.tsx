@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-session";
 import { getStore, STATUSES, STATUS_LABEL } from "@/lib/inquiries";
-import { getProduct } from "@/lib/catalog";
+import { getProduct } from "@/lib/shop/products";
 import { deleteInquiry, updateInquiry } from "../../actions";
 
 export const metadata = { title: "Inquiry" };
@@ -14,19 +14,19 @@ export default async function InquiryDetail({ params, searchParams }: { params: 
   if (!store) notFound();
   const i = await store.get(id);
   if (!i) notFound();
-  const product = i.product ? await getProduct(i.product) : undefined;
+  const product = i.product ? await getProduct(i.product, { admin: true }).catch(() => null) : null;
   const subject = encodeURIComponent(`Re: your inquiry ${i.reference} — Cloud Edge`);
   const rows: [string, string][] = [
     ["Received", new Date(i.createdAt).toLocaleString("en-NG", { dateStyle: "full", timeStyle: "short", timeZone: "Africa/Lagos" })],
     ["Form", i.mode === "quote" ? "Request a quote" : "Contact"],
     ["Name", i.name], ["Email", i.email], ["Phone", i.phone || "—"], ["Organisation", i.organization || "—"],
-    ["Inquiry type", i.type], ["Product", product ? `${product.name}${product.sample ? " (sample listing)" : ""}` : i.product || "—"],
+    ["Inquiry type", i.type], ["Product", product ? `${product.name}` : i.product || "—"],
     ["Timeline", i.timeline || "—"], ["Budget", i.budget || "—"], ["Project description", i.scope || "—"], ["Message", i.message || "—"],
     ["Email notification", i.emailStatus === "sent" ? "Sent" : i.emailStatus === "failed" ? "Failed" : "Email not configured"],
   ];
   return (
     <>
-      <p><Link href="/admin">← All inquiries</Link></p>
+      <p><Link href="/admin/inquiries">← All inquiries</Link></p>
       <h1 style={{ fontSize: "1.7rem" }}>Inquiry {i.reference} <span className={`status-pill ${i.status}`} style={{ verticalAlign: "middle" }}>{STATUS_LABEL[i.status]}</span></h1>
       {sp.saved && <div className="alert ok" role="status"><p>Changes saved.</p></div>}
 

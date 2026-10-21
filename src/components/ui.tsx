@@ -2,7 +2,6 @@ import Link from "next/link";
 import Image from "next/image";
 import Icon, { Svg, iconPath } from "@/components/Icon";
 import type { Service } from "@/lib/site";
-import { formatPrice, type Product } from "@/content/products";
 import type { Project } from "@/content/projects";
 
 export function PageHero({ eyebrow, title, intro, crumbs }: { eyebrow?: string; title: string; intro?: React.ReactNode; crumbs?: { href?: string; label: string }[] }) {
@@ -97,26 +96,6 @@ export function MediaArt({ icon, label, seed = 0 }: { icon: string; label: strin
     </svg>
   );
 }
-export function ProductCard({ p, index = 0 }: { p: Product; index?: number }) {
-  return (
-    <article className="card hover product-card">
-      <div className="product-media">
-        {p.image ? <Image src={p.image} alt={p.imageAlt ?? p.name} fill sizes="(max-width: 640px) 100vw, 33vw" style={{ objectFit: "cover" }} /> : <MediaArt icon={p.icon} label={`Illustration for ${p.name}`} seed={index} />}
-        {p.sample && <span className="badge sample">Sample listing</span>}
-      </div>
-      <div className="product-body">
-        <div className="meta"><span className="badge cat">{p.category}</span></div>
-        <h3><Link className="card-link" href={`/products/${p.slug}`} style={{ color: "inherit", textDecoration: "none" }}>{p.name}</Link></h3>
-        <p>{p.summary}</p>
-        <div className="price">
-          <strong>{formatPrice(p.price)}</strong>
-          {p.sample && <small>Sample price — not a real offer</small>}
-        </div>
-      </div>
-    </article>
-  );
-}
-
 export function ProjectCard({ p, index = 0 }: { p: Project; index?: number }) {
   return (
     <article className="card product-card" id={p.slug}>

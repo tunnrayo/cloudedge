@@ -14,7 +14,7 @@ try {
   await client.connect();
   await client.query(sql);
   const { rows } = await client.query("SELECT COUNT(*)::int AS n FROM inquiries");
-  console.log(`Success: the inquiries table is ready (${rows[0].n} inquiries stored).`);
+  console.log(`Success: the database schema is ready (${rows[0].n} inquiries stored).`);
 } catch (e) {
   console.error("Database setup failed:", e.message);
   process.exitCode = 1;

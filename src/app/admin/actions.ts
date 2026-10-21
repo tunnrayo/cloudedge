@@ -38,7 +38,7 @@ export async function updateInquiry(form: FormData) {
   const notes = String(form.get("notes") ?? "").slice(0, 5000);
   if (!store || !id) return;
   await store.update(id, { status: isStatus(status) ? status : undefined, notes });
-  revalidatePath("/admin");
+  revalidatePath("/admin/inquiries");
   redirect(`/admin/inquiries/${id}?saved=1`);
 }
 
@@ -50,5 +50,5 @@ export async function deleteInquiry(form: FormData) {
   if (form.get("confirm") !== "yes") redirect(`/admin/inquiries/${id}?confirm=1`);
   await store.remove(id);
   revalidatePath("/admin");
-  redirect("/admin?deleted=1");
+  redirect("/admin/inquiries?deleted=1");
 }

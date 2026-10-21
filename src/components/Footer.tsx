@@ -48,7 +48,7 @@ export default function Footer() {
       </div>
       <div className="container footer-bottom">
         <span>© {year} {company.name}. All rights reserved.</span>
-        <span><Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link></span>
+        <span><Link href="/privacy">Privacy Policy</Link> · <Link href="/terms">Terms of Use</Link> · <Link href="/refund-policy">Refund &amp; Delivery</Link></span>
       </div>
     </footer>
   );

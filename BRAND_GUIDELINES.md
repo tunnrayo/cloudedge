@@ -33,3 +33,8 @@ Text contrast: body text and links meet WCAG AA on their backgrounds.
 - Eyebrow labels: uppercase, letter-spaced, blue (cyan on dark).
 - Badges: "Sample listing" / "Demo concept" (amber) must always appear on sample/demo items.
 - Motion: subtle float on hero icons only; disabled for users who prefer reduced motion.
+
+## Product images (shop)
+- Generated per product by `npm run images:generate`: white 800×600 tile, brand accent bar, category + SKU, **official brand logo**, product name, plan chips and (for suites) official app icons. Footnote states the logo is the owner's trademark.
+- Brands with no available logo get a typographic placeholder labelled as such — replace with an approved image.
+- Uploaded images (Admin → Products) replace generated ones. Use only images you have the right to use.

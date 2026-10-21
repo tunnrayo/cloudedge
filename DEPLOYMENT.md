@@ -1,106 +1,79 @@
-# Deployment Guide — putting the website online
+# Deployment Guide — putting the shop online (Railway)
 
-The website is **ready to deploy but not yet deployed.** Nothing below has been done on your behalf: it needs your own accounts. Prices were checked on 21 October 2026 and can change — always confirm on the provider's pricing page.
-
-## What you need
+**Current state:** code is complete and on GitHub (https://github.com/tunnrayo/cloudedge, branch `main`). It has **not** been deployed:
+that needs your Railway, Paystack and (optionally) Resend accounts. Prices checked 21 Oct 2026 — confirm on each provider's site.
 
 | Item | Needed? | Cost (Oct 2026) |
 |---|---|---|
-| GitHub account (stores the code) | Yes | Free — https://github.com |
-| Hosting for the website + database | Yes | **Railway (recommended):** one-time US$5 trial credit, then Hobby plan US$5/month which includes US$5 of usage. A small site like this usually stays close to that; check the Usage page after a week. |
-| A domain name, e.g. `cloudedge.com.ng` or `cloudedgetech.com` | Recommended | Paid yearly to a domain registrar (`.ng` / `.com.ng` through a NiRA-accredited registrar) |
-| Resend account (email notifications) | Optional | Free plan: 100 emails/day, 3,000/month, up to 3 domains |
-
-**Why Railway?** It runs the website *and* the PostgreSQL database in one place, and the project already contains `railway.json`. Vercel's free Hobby plan is for **personal, non-commercial use only**, so a company website there needs Vercel Pro (US$20 per user/month) plus a separate database (e.g. Neon) — see Option B.
+| Railway (website + PostgreSQL) | Yes | One-time US$5 trial credit, then Hobby US$5/month including US$5 of usage; usage above that is billed |
+| Paystack business account | Yes, for payments | No monthly fee; per-transaction fees (see paystack.com/pricing) |
+| Domain name | Recommended | Yearly fee to a registrar |
+| Resend (emails) | Recommended | Free plan: 100 emails/day, 3,000/month |
 
 ---
 
-## Step 1 — Put the code on GitHub (one time)
+## Step 1 — Railway project with database
+1. https://railway.com → **Login with GitHub** → **New Project** → **Deploy from GitHub repo** → `tunnrayo/cloudedge`.
+   (If the repo is not listed, click *Configure GitHub App* and give Railway access to it.)
+2. In the project: **+ Create → Database → PostgreSQL**. Wait until it is running.
+3. Click the **website service** → **Settings → Networking → Generate Domain**. Copy the address (e.g. `https://cloudedge-production.up.railway.app`).
+4. Website service → **Variables** → add:
 
-Your repository: **https://github.com/tunnrayo/cloudedge** (private), branch `main`.
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway links it to the database) |
+| `SITE_URL` | the address from step 3 (later your domain) — no trailing slash |
+| `NEXT_PUBLIC_SITE_URL` | same as `SITE_URL` |
+| `ADMIN_PASSWORD` | long password only you know (12+ characters) |
+| `ADMIN_SESSION_SECRET` | 64 random characters (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+| `PAYSTACK_SECRET_KEY` | your **test** secret key `sk_test_…` to start (Step 2) |
 
-**Easiest:** link GitHub to Claude (claude.ai → Settings → Connectors → GitHub, or the "connect GitHub" prompt in a Claude Code session), give it access to `tunnrayo/cloudedge`, then ask Claude: *"Push the Cloud Edge project to https://github.com/tunnrayo/cloudedge on main."*
+5. Railway redeploys. Build uses `npm run build`; start uses `npm start`; health check is `/api/health` (configured in `railway.json`).
+   ✅ Deploy logs show `[db] applied migration 1 shop_core` and `[db] imported 61 catalogue products` on the first start, then `Ready`.
+6. Open `https://YOUR-ADDRESS/api/health` → ✅ `{"ok":true,"database":"postgres","payments":"test"}`.
 
-**Or push it yourself from your computer:**
-1. Install Git from https://git-scm.com (Windows: accept the defaults). Check with `git --version`.
-2. Unzip the project and open a terminal inside the `cloudedge-website` folder (it already contains the Git history and the remote address).
-3. Run:
-   ```
-   git remote -v
-   git push -u origin main
-   ```
-   The first line should show `https://github.com/tunnrayo/cloudedge.git`. A browser window asks you to sign in to GitHub the first time.
-   ✅ Success: the last lines say `main -> main` and the GitHub page shows the files.
-4. If the push is **rejected** ("fetch first" / "non-fast-forward"), GitHub already has a file such as a README. Do **not** force-push. Run:
-   ```
-   git pull origin main --allow-unrelated-histories --no-rebase
-   ```
-   If it reports a conflict in `README.md`, open the file, keep the Cloud Edge text, delete the lines starting with `<<<<<<<`, `=======` and `>>>>>>>`, then run `git add README.md` and `git commit -m "Merge GitHub README"`. Then run `git push -u origin main` again.
+**Persistence:** orders, customers, products and uploaded images are stored in PostgreSQL, so redeploys do not lose them.
+Do not rely on the app's own disk on Railway (it is reset on each deploy). Enable Postgres backups in Railway if your plan offers them, and use Admin → Orders → Export CSV regularly.
 
-`.env.local` is never uploaded (it is in `.gitignore`), which is correct.
+## Step 2 — Paystack (test first, then live)
+1. Create an account at https://dashboard.paystack.com. Test mode works immediately.
+2. **Settings → API Keys & Webhooks**:
+   - copy the **Test Secret Key** (`sk_test_…`) into Railway `PAYSTACK_SECRET_KEY`;
+   - set **Test Webhook URL** to `https://YOUR-ADDRESS/api/paystack/webhook`;
+   - set **Test Callback URL** to `https://YOUR-ADDRESS/checkout/complete` (the site also sends its own callback per payment).
+3. In Admin → Products, enable one product for purchase (see Step 4), buy it on the live site using one of Paystack's test cards (listed in Paystack's *Test Payments* documentation), and confirm:
+   - you return to "Payment confirmed"; the order shows **Paid** and **TEST MODE** in Admin → Orders;
+   - the order's history shows "Payment … verified with Paystack".
+4. **Going live** (only after your Paystack business account is activated — Paystack asks for business registration details):
+   replace `PAYSTACK_SECRET_KEY` with the **Live Secret Key** `sk_live_…`, set the **Live Webhook URL** to the same webhook address, redeploy,
+   and make one small real purchase to verify. The admin dashboard shows **LIVE** when live keys are active.
+   No code changes are needed to switch from test to live.
 
-## Step 2 — Option A: Railway (recommended)
+## Step 3 — Emails (recommended)
+1. https://resend.com → add and verify your domain (DNS records at your registrar) → create an API key.
+2. Railway variables: `RESEND_API_KEY`, `SHOP_FROM_EMAIL` (e.g. `Cloud Edge Orders <orders@yourdomain.com>`), `INQUIRY_FROM_EMAIL`,
+   optionally `SHOP_NOTIFY_EMAIL` / `INQUIRY_TO_EMAIL` (default: the official company email).
+3. Redeploy and place a test order: Admin → order → History shows **email sent**.
 
-1. Go to https://railway.com, click **Login** → **Login with GitHub**.
-2. Click **New Project** → **Deploy from GitHub repo** → choose `cloudedge-website`. Railway starts building; it may fail the first time because settings are missing — that is expected.
-3. Add the database: in the project, click **+ Create** (or **New**) → **Database** → **PostgreSQL**. Wait until it shows as running.
-4. Click your **website service** (not the database) → **Variables** tab → add these one by one (**New Variable**):
+## Step 4 — Make products purchasable
+All 61 products start as *Available on request* (see docs/CATALOGUE.md for why). For each product you are allowed to supply:
+Admin → Products → product → **Resale permission: authorised** → set **Price verification** after re-checking the price → **Sale mode: Buy online** → Save.
+The site will refuse to enable purchase if resale is unconfirmed or the price still needs verification.
 
-   | Name | Value |
-   |---|---|
-   | `DATABASE_URL` | Type `${{Postgres.DATABASE_URL}}` — Railway links it to the database automatically (use the database service's exact name if it isn't "Postgres") |
-   | `ADMIN_PASSWORD` | A long password only you know (12+ characters) |
-   | `ADMIN_SESSION_SECRET` | 64 random characters. Generate: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
-   | `NEXT_PUBLIC_SITE_URL` | Your website address, e.g. `https://cloudedge-website-production.up.railway.app` (from step 5) or later your own domain. No trailing slash. |
+## Step 5 — Your own domain
+1. Railway → website service → **Settings → Networking → Custom Domain** → `www.yourdomain.com`.
+2. Add the DNS record Railway shows (usually CNAME) at your registrar; wait until Railway shows it active (HTTPS is automatic).
+3. Update `SITE_URL` and `NEXT_PUBLIC_SITE_URL` to `https://www.yourdomain.com`, and the Paystack webhook/callback URLs. Redeploy.
 
-5. Website service → **Settings** → **Networking** → **Generate Domain**. Copy the address it gives you and put it in `NEXT_PUBLIC_SITE_URL` (step 4).
-6. Click **Deploy** (or it redeploys automatically after variable changes). Open **Deployments** → latest → **View logs**.
-   ✅ Success: the build log ends with the list of routes and the deploy log shows `Ready`.
-7. Test the live site:
-   - Open the address. Check Home, Services, Contact.
-   - Send a test message from **Contact**. You should see "Thank you — your message has been received" with a reference like `CE-7K3P9Q`.
-   - Open `/admin`, sign in with `ADMIN_PASSWORD`, and confirm your test message is listed. Delete it afterwards.
+## Updating the live site
+Edit → `npm run check` → `git add -A && git commit -m "…" && git push`. Railway redeploys automatically from `main`.
+Database changes are applied automatically by numbered migrations (`src/lib/migrations.ts`) on start.
 
-> If something fails, open the deployment logs; the error usually names the missing variable. Common causes: `DATABASE_URL` not linked to the database, or a typo in a variable name.
-
-## Step 3 — Email notifications (optional, recommended)
-
-Inquiries are always stored in the database and visible in `/admin`. Email adds an instant notification to the company inbox.
-
-1. Sign up at https://resend.com (free).
-2. **Domains** → **Add Domain** → enter your domain → add the DNS records Resend shows at your domain registrar → wait until **Verified**. (Without your own domain you can only send test emails to your own Resend login address using `onboarding@resend.dev`.)
-3. **API Keys** → **Create API Key** (permission: Sending access). Copy it — it is shown once.
-4. In Railway → website service → **Variables**, add:
-   - `RESEND_API_KEY` = the key
-   - `INQUIRY_FROM_EMAIL` = `Cloud Edge Website <noreply@YOURDOMAIN>`
-   - `INQUIRY_TO_EMAIL` = where to receive inquiries (leave empty to use CLOUDEDGETECHNOLOGYSERVICES@GMAIL.COM)
-5. Redeploy, send a test inquiry and check the inbox (and spam folder). In `/admin` the inquiry shows **Email notification: Sent**.
-
-## Step 4 — Connect your own domain
-
-1. Buy the domain from a registrar.
-2. Railway → website service → **Settings** → **Networking** → **Custom Domain** → enter e.g. `www.yourdomain.com`.
-3. Railway shows a DNS record (usually a **CNAME**). Add it in your registrar's DNS settings exactly as shown.
-4. Wait for Railway to show the domain as active (minutes to a few hours). HTTPS is set up automatically.
-5. Change `NEXT_PUBLIC_SITE_URL` to `https://www.yourdomain.com` and redeploy (the address is built into the pages, so a redeploy is required).
-
-## Option B: Vercel + Neon (alternative)
-
-1. Database: create a free project at https://neon.tech and copy its connection string (it contains `sslmode=require`).
-2. https://vercel.com → **Add New Project** → import the GitHub repository.
-3. Add the variables from the Railway table, using the Neon connection string as `DATABASE_URL`.
-4. Deploy. Note: a company website requires Vercel **Pro** under Vercel's fair-use rules. The rate limiter is per server instance, which is weaker on Vercel's serverless platform.
-
-## Updating the live site later
-
-Edit files → run `npm run check` → then:
-```
-git add -A
-git commit -m "Describe your change"
-git push
-```
-Railway (and Vercel) redeploy automatically after each push.
-
-## Backups
-
-Railway → Postgres service → **Backups** lets you create backups (availability depends on plan). You can also download all inquiries at any time from `/admin` → **Export CSV**.
+## Final live checklist
+- [ ] `/api/health` ok, database `postgres`
+- [ ] Admin login works; dashboard shows the right payment mode
+- [ ] Test purchase → Paid → appears in Sourcing queue
+- [ ] Webhook delivery succeeds (Paystack dashboard → Webhooks logs)
+- [ ] Order and payment emails arrive (if Resend configured)
+- [ ] Refund test in test mode
+- [ ] Switch to live keys; one small real purchase; refund it if desired

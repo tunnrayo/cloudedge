@@ -1,93 +1,67 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin-session";
-import { getStore, isStatus, STATUSES, STATUS_LABEL } from "@/lib/inquiries";
-import { emailConfigured } from "@/lib/email";
+import { getDb } from "@/lib/db";
+import { getStore } from "@/lib/inquiries";
+import { orderCounts } from "@/lib/shop/orders";
+import { paystackMode } from "@/lib/shop/paystack";
+import { shopEmailConfigured } from "@/lib/shop/mail";
+import { ORDER_STATUS_LABEL, nairaFromKobo, type OrderStatus } from "@/lib/shop/format";
 
-export const metadata = { title: "Inquiries" };
-const PAGE = 25;
-const fmt = (iso: string) => new Date(iso).toLocaleString("en-NG", { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Lagos" });
+export const metadata = { title: "Dashboard" };
 
-export default async function AdminHome({ searchParams }: { searchParams: Promise<{ status?: string; q?: string; page?: string; deleted?: string }> }) {
+export default async function Dashboard() {
   await requireAdmin();
-  const sp = await searchParams;
-  const store = getStore();
-  if (!store) {
-    return (
-      <div className="alert info">
-        <p><strong>No database is configured, so inquiries are not being stored.</strong> They are only emailed (if email is configured). Set <code>DATABASE_URL</code> to store inquiries here. See HANDOVER.md.</p>
-      </div>
-    );
-  }
-  const status = isStatus(sp.status) ? sp.status : undefined;
-  const q = (sp.q ?? "").trim().slice(0, 100) || undefined;
-  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
-
-  let data: { items: Awaited<ReturnType<typeof store.list>>["items"]; total: number } | null = null;
+  let dbError = "";
   let counts: Record<string, number> = {};
-  let dbError = false;
+  let stats = { queue: 0, abandoned: 0, review: 0, revenue: "0", products: 0, buyable: 0, needsPrice: 0, unconfirmed: 0, dbKind: "" };
   try {
-    [data, counts] = await Promise.all([store.list({ status, q, limit: PAGE, offset: (page - 1) * PAGE }), store.counts()]);
+    const db = await getDb();
+    counts = await orderCounts();
+    const one = async (sql: string) => Number((await db.query<{ n: number }>(sql)).rows[0]?.n ?? 0);
+    stats = {
+      queue: await one(`SELECT COUNT(*)::int AS n FROM orders o WHERE o.status IN ('paid','processing','awaiting_activation','on_hold') AND EXISTS (SELECT 1 FROM order_items i WHERE i.order_id = o.id AND i.sourcing_status NOT IN ('delivered','cancelled_refunded'))`),
+      abandoned: await one(`SELECT COUNT(*)::int AS n FROM orders WHERE status = 'pending_payment' AND created_at < NOW() - INTERVAL '24 hours'`),
+      review: await one(`SELECT COUNT(*)::int AS n FROM orders WHERE status = 'payment_review'`),
+      revenue: String((await db.query<{ n: string }>(`SELECT COALESCE(SUM(total_kobo - refunded_kobo), 0)::text AS n FROM orders WHERE payment_status IN ('paid','partially_refunded') AND payment_mode = 'live'`)).rows[0].n),
+      products: await one(`SELECT COUNT(*)::int AS n FROM products WHERE status = 'published'`),
+      buyable: await one(`SELECT COUNT(*)::int AS n FROM products WHERE status = 'published' AND sale_mode = 'purchase' AND resale_status = 'authorised' AND price_verification <> 'needs_verification' AND fulfilment_type <> 'unavailable'`),
+      needsPrice: await one(`SELECT COUNT(*)::int AS n FROM products WHERE price_verification = 'needs_verification' AND status <> 'archived'`),
+      unconfirmed: await one(`SELECT COUNT(*)::int AS n FROM products WHERE resale_status = 'unconfirmed' AND status <> 'archived'`),
+      dbKind: db.kind,
+    };
   } catch (e) {
-    console.error("[admin] storage error:", (e as Error).message);
-    dbError = true;
+    dbError = (e as Error).message;
   }
-  const qs = (p: Record<string, string | undefined>) => {
-    const u = new URLSearchParams();
-    Object.entries({ status, q, ...p }).forEach(([k, v]) => v && u.set(k, v));
-    const s = u.toString();
-    return s ? `/admin?${s}` : "/admin";
-  };
-  const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  const pages = data ? Math.max(1, Math.ceil(data.total / PAGE)) : 1;
-
+  const mode = paystackMode();
+  const inquiryStore = getStore();
   return (
     <>
-      <h1 style={{ fontSize: "1.8rem" }}>Inquiries</h1>
-      <p className="muted">Storage: {store.kind === "postgres" ? "PostgreSQL database" : "local file (development)"} · Email notifications: {emailConfigured() ? "on" : "not configured"}</p>
-      {sp.deleted && <div className="alert ok" role="status"><p>Inquiry deleted.</p></div>}
-      {dbError && <div className="alert bad" role="alert"><p>Could not load inquiries from storage. Check DATABASE_URL and that the database is running. Details are in the server logs.</p></div>}
-
-      <div className="stats">
-        <Link className="stat" href="/admin"><b>{total}</b><span>All</span></Link>
-        {STATUSES.map((s) => <Link key={s} className="stat" href={`/admin?status=${s}`}><b>{counts[s] ?? 0}</b><span>{STATUS_LABEL[s]}</span></Link>)}
+      <h1 style={{ fontSize: "1.8rem" }}>Dashboard</h1>
+      {dbError && <div className="alert bad" role="alert"><p><strong>Database unavailable.</strong> Check DATABASE_URL and that the database is running. ({dbError})</p></div>}
+      <div className="card" style={{ marginBottom: 22 }}>
+        <h2 className="h-small">Setup status</h2>
+        <ul className="feature-list">
+          <li><span className={`flag ${stats.dbKind === "postgres" ? "good" : "warn"}`}>{stats.dbKind === "postgres" ? "OK" : stats.dbKind ? "LOCAL" : "OFF"}</span> Database: {stats.dbKind === "postgres" ? "PostgreSQL" : stats.dbKind === "pglite" ? "local development database (.data/pglite)" : "not connected"}</li>
+          <li><span className={`flag ${mode === "live" ? "good" : mode === "test" ? "warn" : "bad"}`}>{mode.toUpperCase()}</span> Payments (Paystack): {mode === "live" ? "live mode — real payments" : mode === "test" ? "test mode — no real money is charged" : "not configured — checkout is disabled"}</li>
+          <li><span className={`flag ${shopEmailConfigured() ? "good" : "warn"}`}>{shopEmailConfigured() ? "OK" : "OFF"}</span> Customer emails (Resend): {shopEmailConfigured() ? "configured" : "not configured — emails are recorded as not sent"}</li>
+          <li><span className={`flag ${inquiryStore ? "good" : "warn"}`}>{inquiryStore ? "OK" : "OFF"}</span> Inquiry storage: {inquiryStore?.kind ?? "none"}</li>
+        </ul>
       </div>
-
-      <form className="toolbar" method="get" action="/admin" role="search">
-        <div className="field"><label htmlFor="q">Search</label><input id="q" name="q" defaultValue={q} placeholder="Name, email, reference…" /></div>
-        <div className="field"><label htmlFor="status">Status</label>
-          <select id="status" name="status" defaultValue={status ?? ""}><option value="">All</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select></div>
-        <button className="btn btn-primary btn-sm" type="submit">Filter</button>
-        {(q || status) && <Link className="btn btn-outline btn-sm" href="/admin">Clear</Link>}
-      </form>
-
-      {data && data.items.length === 0 ? (
-        <div className="empty"><p>{q || status ? "No inquiries match this filter." : "No inquiries yet. New submissions from the Contact and Quote forms will appear here."}</p></div>
-      ) : data && (
-        <div className="table-wrap">
-          <table>
-            <caption className="sr-only">Inquiries, newest first</caption>
-            <thead><tr><th scope="col">Received</th><th scope="col">Reference</th><th scope="col">Name</th><th scope="col">Type</th><th scope="col">Status</th></tr></thead>
-            <tbody>
-              {data.items.map((i) => (
-                <tr key={i.id}>
-                  <td>{fmt(i.createdAt)}</td>
-                  <td><Link href={`/admin/inquiries/${i.id}`}>{i.reference}</Link></td>
-                  <td>{i.name}<br /><span className="muted" style={{ fontSize: ".85rem" }}>{i.email}</span></td>
-                  <td>{i.type}{i.mode === "quote" && <><br /><span className="muted" style={{ fontSize: ".85rem" }}>Quote request</span></>}</td>
-                  <td><span className={`status-pill ${i.status}`}>{STATUS_LABEL[i.status]}</span></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {pages > 1 && (
-        <nav aria-label="Pages" className="actions">
-          {page > 1 && <Link className="btn btn-outline btn-sm" href={qs({ page: String(page - 1) })}>← Newer</Link>}
-          <span className="muted" style={{ alignSelf: "center" }}>Page {page} of {pages}</span>
-          {page < pages && <Link className="btn btn-outline btn-sm" href={qs({ page: String(page + 1) })}>Older →</Link>}
-        </nav>
-      )}
+      <div className="stats">
+        <Link className="stat" href="/admin/orders?queue=sourcing"><b>{stats.queue}</b><span>Orders to source / fulfil</span></Link>
+        <Link className="stat" href="/admin/orders?status=on_hold"><b>{counts.on_hold ?? 0}</b><span>On hold (customer decision)</span></Link>
+        <Link className="stat" href="/admin/orders?queue=review"><b>{stats.review}</b><span>Payments to review</span></Link>
+        <Link className="stat" href="/admin/orders?queue=abandoned"><b>{stats.abandoned}</b><span>Abandoned checkouts (24h+)</span></Link>
+        <div className="stat"><b>{nairaFromKobo(stats.revenue)}</b><span>Live revenue (net of refunds)</span></div>
+      </div>
+      <div className="stats">
+        <Link className="stat" href="/admin/products"><b>{stats.products}</b><span>Published products</span></Link>
+        <Link className="stat" href="/admin/products?flag=buyable"><b>{stats.buyable}</b><span>Sold online (purchase enabled)</span></Link>
+        <Link className="stat" href="/admin/products?flag=price"><b>{stats.needsPrice}</b><span>Prices needing verification</span></Link>
+        <Link className="stat" href="/admin/products?flag=resale"><b>{stats.unconfirmed}</b><span>Resale permission unconfirmed</span></Link>
+      </div>
+      <h2 className="h-small" style={{ marginTop: 10 }}>Orders by status</h2>
+      <div className="stats">{(Object.keys(ORDER_STATUS_LABEL) as OrderStatus[]).map((s) => <Link key={s} className="stat" href={`/admin/orders?status=${s}`}><b>{counts[s] ?? 0}</b><span>{ORDER_STATUS_LABEL[s]}</span></Link>)}</div>
     </>
   );
 }

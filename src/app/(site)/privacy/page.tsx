@@ -20,7 +20,9 @@ export default function Privacy() {
           <p>This website is operated by {company.name} (RC {company.rc}), {company.address.join(", ")} (&ldquo;Cloud Edge&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). We are responsible for the personal information you submit through it.</p>
 
           <h2>What we collect</h2>
-          <p>We only collect what you choose to submit through the Contact or Request a Quote forms:</p>
+          <p><strong>Orders:</strong> when you buy, we collect your name, email, phone number, optional company name, billing address, order notes, the products you ordered and any details a product needs (for example a domain name). Payment is handled by Paystack: we receive the payment status, amount and reference, but <strong>never your card number or CVV</strong>.</p>
+          <p><strong>Accounts:</strong> if you create an account we store your name, email, optional phone number and a securely hashed password (we cannot read your password).</p>
+          <p><strong>Enquiries:</strong> we collect what you submit through the Contact or Request a Quote forms:</p>
           <ul>
             <li>your name and email address (required);</li>
             <li>phone number and organisation name (optional);</li>
@@ -30,11 +32,13 @@ export default function Privacy() {
           <p>Our hosting provider may also record technical information such as IP addresses in server logs for security and reliability. We use IP addresses briefly in memory to limit repeated form submissions; we do not store them with your inquiry.</p>
 
           <h2>How we use it</h2>
-          <p>We use your information only to respond to your inquiry, discuss a possible project and keep a record of our correspondence. We do not use it for marketing without your separate permission, and we do not sell it.</p>
+          <p>To process and deliver your orders (including sharing the details a vendor or supplier needs to activate your product, such as the account email), to confirm payments, to provide refunds, to respond to enquiries and to keep business and tax records. We do not use it for marketing without your separate permission, and we do not sell it.</p>
 
           <h2>Where it is stored and who can see it</h2>
           <ul>
-            <li>Inquiries are stored in a secured database used by this website. Only authorised Cloud Edge staff can view them, through a password-protected admin area.</li>
+            <li>Orders, accounts and inquiries are stored in a secured database used by this website. Only authorised Cloud Edge staff can view them, through a password-protected admin area.</li>
+            <li>Payments are processed by Paystack, which handles your card details under its own privacy policy.</li>
+            <li>To fulfil an order we may share the necessary details with the product&apos;s vendor or supplier.</li>
             <li>When email notifications are switched on, a copy of your inquiry is sent to our company mailbox through our email delivery provider (Resend).</li>
             <li>The website and database are run by our hosting providers, which process data on our behalf. Some providers may store data outside Nigeria.</li>
           </ul>
@@ -43,7 +47,7 @@ export default function Privacy() {
           <p>We keep inquiries only as long as needed to respond and for reasonable business records, and review them regularly. Proposed period: up to 24 months after our last contact, unless you become a client (then our client agreement applies). <em>[Period to be confirmed by the company.]</em></p>
 
           <h2>Cookies and analytics</h2>
-          <p>This website does not use advertising or tracking cookies and does not currently use analytics. The only cookie is a security cookie set when Cloud Edge staff sign in to the admin area; visitors who do not sign in never receive it.</p>
+          <p>This website does not use advertising or tracking cookies and does not currently use analytics. It uses a sign-in cookie only if you log in to a customer account (or staff sign in to the admin area). Your shopping cart is kept in your own browser&apos;s storage, not on our server, until you check out.</p>
 
           <h2>Your rights</h2>
           <p>You can ask to see, correct or delete the information you sent us, or object to how we use it. Email <a href={`mailto:${company.email}`}>{company.email}</a> with your request and, if you have it, your inquiry reference. You may also complain to the Nigeria Data Protection Commission.</p>

@@ -23,8 +23,9 @@ export default function Terms() {
           <h2>Information on this website</h2>
           <p>Content is provided for general information about our business and services. It is not a binding offer. Service descriptions show what we are set up to provide; availability and scope are confirmed in writing for each engagement.</p>
 
-          <h2>Sample products and demo projects</h2>
-          <p>Items marked <strong>&ldquo;Sample listing&rdquo;</strong> on the Products pages, including their prices, are examples for demonstration only and are not offers for sale. Items marked <strong>&ldquo;Demo concept&rdquo;</strong> on the Portfolio page are illustrative concepts, not completed client projects.</p>
+          <h2>Shop, prices and orders</h2>
+          <p>Products in our shop are made by third-party vendors and are supplied by us after payment, as described in the <Link href="/refund-policy">Refund &amp; Delivery Policy</Link>. Prices are in Nigerian naira; where a vendor prices in US dollars, the conversion rate and reference price are shown on the product page. An order is accepted when Paystack confirms your payment; we may cancel and fully refund an order if the product cannot be supplied. Products marked &ldquo;Available on request&rdquo; are not offered for online sale.</p>
+          <p>You must use products in line with the vendor&apos;s licence terms. Items marked <strong>&ldquo;Demo concept&rdquo;</strong> on the Portfolio page are illustrative concepts, not completed client projects.</p>
 
           <h2>Inquiries and quotes</h2>
           <p>Submitting a form does not create a contract. Any work, price and timeline is agreed separately in writing. Quotes are valid only for the period stated on them.</p>

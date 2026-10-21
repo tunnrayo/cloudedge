@@ -1,32 +1,24 @@
-# Testing — results of 21 October 2026 (v0.2.0)
+# Testing — results of 21 October 2026 (v0.3.0)
 
-Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 18.4 (local test server).
+Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 18.4, mock Paystack API (tests/e2e/mock-paystack.mjs).
 
-| Check | Command / method | Result |
-|---|---|---|
-| TypeScript | `npm run typecheck` | Pass |
-| Lint (ESLint, Next core-web-vitals + TS rules) | `npm run lint` | Pass, 0 problems |
-| Unit tests (validation, session tokens, password check, admin lock) | `npm test` | 19/19 pass |
-| Production build | `npm run build` | Pass (all routes generated) |
-| Dependency audit (production deps) | `npm audit --omit=dev` | 0 vulnerabilities |
-| End-to-end (production server + PostgreSQL) | Playwright script, 37 checks | 37/37 pass |
-| Responsive screenshots: 15 pages × 1440/768/390 px (45) | Playwright | 45/45 with no horizontal overflow and no console errors |
-| Failure modes | curl | No storage & no email → 503 "NOT sent" + email shown; database down & no email → 502 "NOT sent" |
-| Security headers | curl | CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy present |
-| `npm run db:setup` | against PostgreSQL | Pass |
+| Check | Result |
+|---|---|
+| `npm run typecheck` | Pass |
+| `npm run lint` | Pass (0 problems) |
+| `npm test` — 30 unit tests (pricing formula, catalogue integrity, document-price differences flagged, webhook signature, checkout & inquiry validation, admin sessions) | 30/30 |
+| `npm run build` (clean) | Pass |
+| `npm audit --omit=dev` | 0 vulnerabilities |
+| tests/e2e/site.e2e.mjs (company site, inquiries, admin) | 37/37 |
+| tests/e2e/shop.e2e.mjs (full customer + admin journey) | 71/71 |
+| Responsive: 16 pages × 1440/768/390 px | 48/48 no horizontal overflow, no console errors |
+| Local development path (no DATABASE_URL → PGlite) | Migrations + 61-product import + pages OK |
+| `npm run db:setup` on an empty PostgreSQL database | Pass |
+| Product images | 61 files, 61 distinct (SHA-256), 0 broken references |
+| Server log during e2e | 0 errors |
 
-### The 37 end-to-end checks
-API: GET → 405 · bad JSON → 400 · invalid fields → 422 with messages · honeypot → silently dropped · cross-origin → 403 · unknown product → 422 · valid → 200 + reference · 6th rapid request → 429 · oversized body → 413.
-Forms: empty submit shows errors and focuses first field · contact submit shows success + reference · quote from product page shows product and pre-selects type · quote submit · service pre-selection.
-Navigation: all 37 unique internal links on 12 pages return OK · mobile menu opens, navigates, closes, Escape closes · first Tab focuses "Skip to main content".
-Admin: anonymous /admin and /admin/export blocked · forged cookie rejected · wrong password rejected · login · list · search · detail shows product and budget · status + notes saved · CSV export · delete needs confirmation · delete · sign-out re-locks.
-No uncaught JavaScript errors.
+### Shop journey covered (71 checks)
+Admin enabling products and guardrails (blocked when price unverified / resale unconfirmed; bulk skip) · search, category, billing, availability filters, sort by price · distinct/unbroken images · product page price, billing, reference & FX · enquiry-only products show request button · add to cart, quantities, cart count, persistence after refresh, totals, remove · checkout validation · browser-supplied prices ignored · enquiry product rejected · quantity clamp · cross-site POST blocked · redirect to Paystack · pending order with server total · redirect before payment does not pay · confirmed payment, cart cleared, order paid · duplicate webhook ignored, paid exactly once, forged signature rejected · failed payment, retry with new reference, webhook-only confirmation · underpaid "success" → payment review · unknown reference · order page access control (no token / wrong token) · anonymous admin & CSV blocked · sourcing queue, supplier/cost/date saved, margin · fulfil blocked until delivered · on-hold message, customer approval · delivery details shown to customer · partial & full refunds, over-refund blocked · registration (weak password rejected, scrypt hash), pre-filled checkout, account order history, owner access, sign-out, wrong password · image upload (fake rejected, PNG stored & served) · product request form · mobile cart.
 
-## Not tested (and why)
-- Real email delivery via Resend — no API key/domain available.
-- Live deployment, custom domain, HTTPS — no hosting account access (Railway connector failed to connect).
-- Screen-reader walkthrough and Lighthouse score — not available in this environment (semantic HTML, labels, focus states and contrast were checked manually).
-- Real phones/browsers other than Chromium.
-
-## How to re-run
-`npm run check` runs typecheck, lint, unit tests and build. The browser test scripts used are described above; ask Claude to recreate them if needed (they live outside the project to keep it small).
+## Not tested (requires your accounts)
+Real Paystack test/live keys and webhook delivery from Paystack's servers · real email delivery (Resend) · Railway deployment, custom domain, HTTPS · screen-reader walkthrough and Lighthouse · browsers other than Chromium.

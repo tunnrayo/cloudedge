@@ -27,6 +27,10 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  // PGlite (local development database) ships WebAssembly files and must not be bundled.
+  serverExternalPackages: ["@electric-sql/pglite"],
+  // Allow product image uploads up to 2 MB through admin forms.
+  experimental: { serverActions: { bodySizeLimit: "3mb" } },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

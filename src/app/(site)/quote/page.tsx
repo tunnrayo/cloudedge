@@ -3,7 +3,9 @@ import Icon from "@/components/Icon";
 import InquiryForm from "@/components/InquiryForm";
 import { PageHero } from "@/components/ui";
 import { company, processSteps, services } from "@/lib/site";
-import { getProduct } from "@/lib/catalog";
+import { getProduct } from "@/lib/shop/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Request a Quote",
@@ -14,7 +16,7 @@ export const metadata: Metadata = {
 export default async function Quote({ searchParams }: { searchParams: Promise<{ service?: string; product?: string }> }) {
   const { service, product: productSlug } = await searchParams;
   const svc = services.find((s) => s.slug === service);
-  const product = productSlug ? await getProduct(productSlug) : undefined;
+  const product = productSlug ? await getProduct(productSlug).catch(() => null) : null;
   const defaultType = product ? "Product enquiry" : svc?.inquiryType;
   return (
     <>
@@ -23,7 +25,7 @@ export default async function Quote({ searchParams }: { searchParams: Promise<{ 
       <section className="section">
         <div className="container split form-split">
           <div className="form-card">
-            <InquiryForm mode="quote" defaultType={defaultType} product={product ? { slug: product.slug, name: product.sample ? `${product.name} (sample listing)` : product.name } : undefined} />
+            <InquiryForm mode="quote" defaultType={defaultType} product={product ? { slug: product.slug, name: product.name } : undefined} />
           </div>
           <aside aria-labelledby="next-title">
             <h2 id="next-title" style={{ fontSize: "1.3rem" }}>What happens next</h2>

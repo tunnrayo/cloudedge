@@ -22,8 +22,6 @@ export const social: { label: string; href: string }[] = [];
 
 /** Website behaviour switches. */
 export const settings = {
-  /** Show the clearly labelled SAMPLE product listings. Set to false once real products are added. */
-  showSampleProducts: true,
   /** Show the clearly labelled DEMO portfolio concepts. Set to false once real, approved projects are added. */
   showDemoProjects: true,
 };
@@ -148,7 +146,9 @@ export const faqs = [
   { q: "How do I start a project?", a: "Send a project inquiry using the Request a Quote form, describing what you need. We will reply by email to discuss scope and next steps." },
   { q: "Do I need to know my budget?", a: "No. The budget field is optional. A rough range helps us suggest a realistic approach, but you can leave it blank." },
   { q: "Can you give a fixed price immediately?", a: "Pricing depends on scope. We prefer to understand your requirements first, then provide a written estimate." },
-  { q: "Are the products on this website available to buy now?", a: "Not yet. The product listings currently shown are clearly labelled samples that demonstrate how products will be presented. Real products and prices will be published when they are ready. You are welcome to enquire about similar work." },
+  { q: "How do I buy software from your shop?", a: "Products marked “Buy online” can be added to your cart and paid for securely with Paystack. Products marked “Available on request” are not sold online yet — send a request and we will confirm availability and price by email." },
+  { q: "How are products delivered?", a: "After your payment is confirmed, our team purchases or provisions the product from the vendor or a supplier and emails you the activation details. You can follow progress on your order page. See the Refund & Delivery Policy for details." },
+  { q: "Why are prices in naira but based on US dollar prices?", a: "Many vendors price in US dollars. Each product page shows the vendor's reference price, its source, the exchange rate used and the date the price was checked." },
   { q: "Where are you located?", a: "Our registered address is Suite 306B, Samfa Plaza, Ndola Crescent, Wuse Zone 5, Abuja, FCT, Nigeria." },
   { q: "Do you work with clients outside Nigeria?", a: "We welcome inquiries from Nigerian and international clients. Send the details of your project and we will discuss what is practical." },
   { q: "What happens to the information I send?", a: "It is used only to respond to your inquiry. See the Privacy Policy for details of what is stored and for how long." },

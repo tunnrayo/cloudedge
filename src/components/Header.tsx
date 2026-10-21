@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { nav, company } from "@/lib/site";
 import { Svg } from "@/components/Icon";
+import CartIcon from "@/components/shop/CartIcon";
 
 export default function Header() {
   const [open, setOpen] = useState(false);
@@ -43,11 +44,14 @@ export default function Header() {
           <div className="nav-mobile-extra">
             <Link className="btn btn-primary" href="/quote">Get a Quote <Svg name="arrow" /></Link>
             <Link className="btn btn-outline" href="/search">Search the site</Link>
+            <Link className="btn btn-outline" href="/account">Your account &amp; orders</Link>
           </div>
         </nav>
 
         <div className="header-tools">
-          <Link className="icon-btn" href="/search" aria-label="Search the website"><Svg name="search" /></Link>
+          <Link className="icon-btn hide-sm" href="/search" aria-label="Search the website"><Svg name="search" /></Link>
+          <Link className="icon-btn" href="/account" aria-label="Your account and orders"><Svg name="user" /></Link>
+          <CartIcon />
           <Link className="btn btn-primary btn-sm" href="/quote">Get a Quote <Svg name="arrow" /></Link>
           <button
             type="button" className="icon-btn menu-btn" aria-expanded={open} aria-controls="main-nav"

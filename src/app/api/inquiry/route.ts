@@ -9,7 +9,7 @@ import { company } from "@/lib/site";
 import { getStore } from "@/lib/inquiries";
 import { emailConfigured, sendInquiryEmail } from "@/lib/email";
 import { clientIp, rateLimited } from "@/lib/rate-limit";
-import { getProduct } from "@/lib/catalog";
+import { getProduct } from "@/lib/shop/products";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
   if (input.website) return NextResponse.json({ ok: true }); // honeypot filled: quietly ignore bots
 
   const errors = validate(input);
-  if (input.product && !(await getProduct(input.product))) errors.product = "Unknown product.";
+  if (input.product && !(await getProduct(input.product).catch(() => null))) errors.product = "Unknown product.";
   if (Object.keys(errors).length) return fail(422, "Please correct the highlighted fields.", { errors });
 
   const store = getStore();

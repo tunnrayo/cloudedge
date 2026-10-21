@@ -2,15 +2,21 @@ import Link from "next/link";
 import Image from "next/image";
 import HeroArt from "@/components/HeroArt";
 import Icon, { Svg } from "@/components/Icon";
-import { Cta, FaqList, ProductCard, SectionHead, ServiceCard } from "@/components/ui";
-import { company, faqs, processSteps, services, settings, solutions, values } from "@/lib/site";
-import { getFeaturedProducts } from "@/lib/catalog";
+import { Cta, FaqList, SectionHead, ServiceCard } from "@/components/ui";
+import ProductCard from "@/components/shop/ProductCard";
+import { company, faqs, processSteps, services, solutions, values } from "@/lib/site";
+import { listProducts, categoryCounts, categorySlug } from "@/lib/shop/products";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
-  const featured = await getFeaturedProducts(3);
-  const anySample = featured.some((p) => p.sample);
+  // The shop sections are skipped (not broken) if the database is temporarily unavailable.
+  const [featured, cats] = await Promise.all([
+    listProducts({ sort: "featured" }).then((all) => all.filter((p) => p.featured).slice(0, 6)).catch(() => []),
+    categoryCounts().catch(() => []),
+  ]);
   return (
     <>
       {/* HERO */}
@@ -112,15 +118,17 @@ export default async function Home() {
         <section className="section" aria-labelledby="products-title">
           <div className="container">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 20, flexWrap: "wrap" }}>
-              <SectionHead eyebrow="Products" title="Digital products & packages" id="products-title">
-                <p>A preview of how Cloud Edge products and service packages will be presented.</p>
+              <SectionHead eyebrow="Shop" title="Software & digital products" id="products-title">
+                <p>Productivity, security, creative, developer and cloud products — priced in naira with the vendor reference price shown.</p>
               </SectionHead>
-              <Link className="link-arrow" href="/products" style={{ marginBottom: 40 }}>View all products <Svg name="arrow" /></Link>
+              <Link className="link-arrow" href="/products" style={{ marginBottom: 40 }}>Browse all products <Svg name="arrow" /></Link>
             </div>
-            {anySample && settings.showSampleProducts && (
-              <div className="note" role="note"><Svg name="info" /><p><strong>Sample listings.</strong> These products and prices are examples for demonstration only and are not current offers.</p></div>
+            <div className="grid grid-3">{featured.map((p) => <ProductCard key={p.id} p={p} />)}</div>
+            {cats.length > 0 && (
+              <ul className="tag-list" style={{ marginTop: 28 }} aria-label="Shop by category">
+                {cats.map((c) => <li key={c.category}><Link href={`/products/category/${categorySlug(c.category)}`}>{c.category} ({c.count})</Link></li>)}
+              </ul>
             )}
-            <div className="grid grid-3">{featured.map((p, i) => <ProductCard key={p.slug} p={p} index={i} />)}</div>
           </div>
         </section>
       )}

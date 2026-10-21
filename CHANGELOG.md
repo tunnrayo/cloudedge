@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.0 (2026-10-21) — online shop
+- **Catalogue:** both Word documents combined into one 61-product catalogue (11 categories) stored in PostgreSQL; formula pricing (₦1,333/US$ + ₦10,000, rate checked against NFEM); document arithmetic errors corrected and flagged; 11 reference prices re-checked against official pages; Figma discrepancy flagged.
+- **Images:** 61 distinct product images from official brand logos (CC0/MIT packages) + plan details; manifest in docs/.
+- **Storefront:** search, categories, filters, sorting, product pages with full pricing transparency, related products, cart with persistence, checkout, order tracking, customer accounts, refund & delivery policy.
+- **Payments:** Paystack initialize → verify → signed, deduplicated webhook; idempotent; failure, retry, abandonment and amount-mismatch handling; refunds via Paystack API; test/live by key.
+- **Admin:** dashboard with setup status, orders, sourcing queue (supplier, cost, margin, ETA, tracking, delivery details), on-hold customer approval, refunds, CSV; product create/edit/hide/delete, image upload (stored in DB), bulk actions, purchase guardrails.
+- **Infra:** migrations, auto-seed, PGlite for local dev, /api/health, Railway health check, updated legal pages, 30 unit + 108 end-to-end checks.
+- Sample products removed (replaced by the real catalogue).
+
 ## 0.2.0 (2026-10-21)
 - **Security:** upgraded Next.js 15.5.4 → 16.4.2 and React 19.3 (fixes published advisories); added Content-Security-Policy and HSTS; 0 production vulnerabilities.
 - **Design:** full premium redesign based on the supplied mockup — hero illustration around the approved icon, trust strip, services grid, business-value section, about band, process, FAQ, CTA band, new footer; bundled Poppins/Inter fonts.

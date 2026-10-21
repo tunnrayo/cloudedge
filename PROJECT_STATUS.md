@@ -12,6 +12,7 @@
 - Typecheck, lint, 19 unit tests, production build, 37 end-to-end checks: all pass.
 
 ## Needs you (external)
+0. **GitHub push** — repository https://github.com/tunnrayo/cloudedge (branch `main`) is set as the remote, but this Claude session had no GitHub access, so nothing has been pushed yet. See DEPLOYMENT.md step 1.
 1. **Hosting + database** — not deployed. Follow DEPLOYMENT.md (Railway recommended). The Railway connection in Claude failed to connect during this session, so deployment could not be done from here.
 2. **Admin password + secret** — set `ADMIN_PASSWORD` and `ADMIN_SESSION_SECRET` on the host.
 3. **Email (optional)** — Resend account + verified domain + API key.

@@ -17,17 +17,27 @@ The website is **ready to deploy but not yet deployed.** Nothing below has been 
 
 ## Step 1 — Put the code on GitHub (one time)
 
-1. Create an account at https://github.com and click **New repository**. Name it `cloudedge-website`, choose **Private**, do **not** add a README. Click **Create repository**.
-2. Install Git from https://git-scm.com (Windows: accept the defaults). Check with `git --version`.
-3. In the terminal, inside the project folder, run (replace `YOUR-USERNAME`):
+Your repository: **https://github.com/tunnrayo/cloudedge** (private), branch `main`.
+
+**Easiest:** link GitHub to Claude (claude.ai → Settings → Connectors → GitHub, or the "connect GitHub" prompt in a Claude Code session), give it access to `tunnrayo/cloudedge`, then ask Claude: *"Push the Cloud Edge project to https://github.com/tunnrayo/cloudedge on main."*
+
+**Or push it yourself from your computer:**
+1. Install Git from https://git-scm.com (Windows: accept the defaults). Check with `git --version`.
+2. Unzip the project and open a terminal inside the `cloudedge-website` folder (it already contains the Git history and the remote address).
+3. Run:
    ```
-   git remote remove origin
-   git remote add origin https://github.com/YOUR-USERNAME/cloudedge-website.git
-   git branch -M main
+   git remote -v
    git push -u origin main
    ```
-   (The first line may say "No such remote" — that is fine.) A browser window asks you to sign in to GitHub the first time.
-   ✅ Success: refreshing the GitHub page shows the project files. `.env.local` is **not** uploaded (it is in `.gitignore`), which is correct.
+   The first line should show `https://github.com/tunnrayo/cloudedge.git`. A browser window asks you to sign in to GitHub the first time.
+   ✅ Success: the last lines say `main -> main` and the GitHub page shows the files.
+4. If the push is **rejected** ("fetch first" / "non-fast-forward"), GitHub already has a file such as a README. Do **not** force-push. Run:
+   ```
+   git pull origin main --allow-unrelated-histories --no-rebase
+   ```
+   If it reports a conflict in `README.md`, open the file, keep the Cloud Edge text, delete the lines starting with `<<<<<<<`, `=======` and `>>>>>>>`, then run `git add README.md` and `git commit -m "Merge GitHub README"`. Then run `git push -u origin main` again.
+
+`.env.local` is never uploaded (it is in `.gitignore`), which is correct.
 
 ## Step 2 — Option A: Railway (recommended)
 

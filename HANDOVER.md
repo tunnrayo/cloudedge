@@ -4,6 +4,7 @@ Upload the project ZIP (or the folder) and say:
 > "Continue the Cloud Edge website. Read HANDOVER.md and PROJECT_STATUS.md first. Do not rebuild completed work."
 
 ## Current state
+Git: branch `main`, remote `origin` = https://github.com/tunnrayo/cloudedge.git (private). Never force-push.
 v0.2.0 — complete website, inquiry database, admin area, tests and docs. **Not deployed.** See PROJECT_STATUS.md for the exact list of what remains.
 
 ## Fixed facts (do not change without the owner's instruction)

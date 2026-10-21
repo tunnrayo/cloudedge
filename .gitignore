@@ -1,7 +1,22 @@
+# Dependencies and build output
 node_modules
 .next
-.env
-.env.local
+out
 *.tsbuildinfo
 next-env.d.ts
+
+# Local data (development inquiries file)
 .data
+
+# Secrets: never commit real environment files (only .env.example is allowed)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Logs and OS files
+npm-debug.log*
+*.log
+.DS_Store
+Thumbs.db

@@ -1,4 +1,4 @@
-# Testing — results of 21 October 2026 (v0.3.0)
+# Testing — results of 22 October 2026 (v0.4.0, manual sourcing)
 
 Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 18.4, mock Paystack API (tests/e2e/mock-paystack.mjs).
 
@@ -6,19 +6,15 @@ Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 
 |---|---|
 | `npm run typecheck` | Pass |
 | `npm run lint` | Pass (0 problems) |
-| `npm test` — 30 unit tests (pricing formula, catalogue integrity, document-price differences flagged, webhook signature, checkout & inquiry validation, admin sessions) | 30/30 |
-| `npm run build` (clean) | Pass |
-| `npm audit --omit=dev` | 0 vulnerabilities |
+| `npm test` — 44 unit tests (pricing, catalogue, webhook signature, request validation, request id, **workflow transitions, quote maths, quote validation, expiry, fulfilment record gaps**, inquiry validation, admin sessions) | 44/44 |
+| `npm run build` | Pass |
+| Migration 2 on a database holding v0.3 data (5 orders, 1 customer, 29 events, 61 products) — no reset | Pass: all rows kept; statuses mapped (paid → Payment confirmed, unpaid pending → Reviewing request, mismatch → Awaiting payment + payment review); product delivery wording updated |
 | tests/e2e/site.e2e.mjs (company site, inquiries, admin) | 37/37 |
-| tests/e2e/shop.e2e.mjs (full customer + admin journey) | 71/71 |
-| Responsive: 16 pages × 1440/768/390 px | 48/48 no horizontal overflow, no console errors |
-| Local development path (no DATABASE_URL → PGlite) | Migrations + 61-product import + pages OK |
-| `npm run db:setup` on an empty PostgreSQL database | Pass |
-| Product images | 61 files, 61 distinct (SHA-256), 0 broken references |
-| Server log during e2e | 0 errors |
+| tests/e2e/shop.e2e.mjs (full sourcing workflow) | 109/109 |
 
-### Shop journey covered (71 checks)
-Admin enabling products and guardrails (blocked when price unverified / resale unconfirmed; bulk skip) · search, category, billing, availability filters, sort by price · distinct/unbroken images · product page price, billing, reference & FX · enquiry-only products show request button · add to cart, quantities, cart count, persistence after refresh, totals, remove · checkout validation · browser-supplied prices ignored · enquiry product rejected · quantity clamp · cross-site POST blocked · redirect to Paystack · pending order with server total · redirect before payment does not pay · confirmed payment, cart cleared, order paid · duplicate webhook ignored, paid exactly once, forged signature rejected · failed payment, retry with new reference, webhook-only confirmation · underpaid "success" → payment review · unknown reference · order page access control (no token / wrong token) · anonymous admin & CSV blocked · sourcing queue, supplier/cost/date saved, margin · fulfil blocked until delivered · on-hold message, customer approval · delivery details shown to customer · partial & full refunds, over-refund blocked · registration (weak password rejected, scrypt hash), pre-filled checkout, account order history, owner access, sign-out, wrong password · image upload (fake rejected, PNG stored & served) · product request form · mobile cart.
+### Sourcing journey covered (109 checks)
+Browsing: search, category + sort, billing filter, 61 distinct unbroken images, indicative prices + required disclaimer, no "Buy"/"Add to cart" wording, no Offer structured data, no authorised-partner claim · **unavailable product**: bulk-marked, not requestable on its page, filter, rejected by server (409) · request list: count, persistence, indicative totals, "payment now: none" · **request submission**: validation, review step, reference + acknowledgement ("not an order confirmation"), status Request received, unpaid, no payment record, exactly one row, list cleared, acknowledgement email recorded as *not configured* · **duplicates & references**: same request id → same reference, no second row, secret link not re-issued; 4 requests → 4 unique references; browser prices ignored; cross-site POST blocked; country required · **no payment before acceptance**: pay API 409, no Pay button, forged webhook and fake success page change nothing · **admin**: queue, only valid next statuses offered, history logged · **quotation**: server-calculated totals (USD and NGN lines, % and fixed margins), cannot send without price/country confirmations, status Quote sent, email recorded · **customer view**: total, delivery estimate, licence terms shown; supplier name, costs, margins, internal notes and public API all free of internal data; acceptance needs confirmation tick; acceptance → Awaiting payment; order-confirmation email separate · **revision**: v2 supersedes accepted v1 (v1 amount unchanged), back to Quote sent, payment blocked until re-accepted · **Paystack (mock)**: Pay button for accepted amount, initialised with that amount, early return does not pay, verified success → Payment confirmed, duplicate webhook ignored, bad signature 401, no second payment · admin-recorded customer decision · pay API needs link/login · **underpaid "success" held for review** · **manual payment**: wrong amount rejected, confirmation required, success → Payment confirmed with record; no payment form without accepted quote · **fulfilment**: Fulfilled/Cancelled not offered on a paid order; item cannot be Delivered without the record; Fulfilled offered once complete; customer sees instructions, no supplier data · notifications recorded for every step · **unavailable / refund / expiry**: unpaid → Unavailable; paid → Refund pending (not Cancelled); manual full refund → Refunded; expired quote not offered; admin closes expired quotes · access control (no token, wrong token, anonymous admin pages and CSV) · accounts (weak password, scrypt, prefill, request in account, owner access, sign-out) · image upload · FAQ topics, Terms, Refund policy wording · **mobile (390 px)**: request list, review step and request page without horizontal overflow · no browser errors.
 
 ## Not tested (requires your accounts)
 Real Paystack test/live keys and webhook delivery from Paystack's servers · real email delivery (Resend) · Railway deployment, custom domain, HTTPS · screen-reader walkthrough and Lighthouse · browsers other than Chromium.
+**Live payments have not been tested and must not be assumed to work.**

@@ -1,6 +1,6 @@
 "use client";
 /**
- * Shopping cart stored in the visitor's browser (localStorage), so it survives page refreshes.
+ * Request list ("cart") stored in the visitor's browser (localStorage), so it survives page refreshes.
  * It stores only product slugs, quantities and options — prices always come from the server.
  */
 import { useSyncExternalStore } from "react";

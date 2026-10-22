@@ -6,7 +6,7 @@ These drive a real browser against the **production build** of the site, a real 
 | File | What it checks |
 |---|---|
 | `site.e2e.mjs` | 37 checks: inquiry API, forms, links, mobile menu, keyboard, inquiries admin |
-| `shop.e2e.mjs` | 71 checks: admin product enabling + guardrails, search/filter/sort, images, cart persistence and totals, checkout validation, tamper attempts, Paystack success/failure/retry/mismatch, duplicate & forged webhooks, order access control, sourcing queue, on-hold approval, fulfilment, refunds, customer accounts, image upload, mobile |
+| `shop.e2e.mjs` | 109 checks of the manual sourcing workflow: browsing, unavailable products, request list, request submission + review, duplicates and unique references, no payment before acceptance, guarded statuses, quotation maths/sending/acceptance/revision, Paystack (mock) verification, mismatch, manual payments, fulfilment records, notifications, refunds, expiry, access control, accounts, image upload, policies, mobile |
 | `mock-paystack.mjs` | Stand-in for `api.paystack.co` (initialize, verify, refund, fake checkout page) — tests only |
 
 ## Run (developer machine)

@@ -194,4 +194,100 @@ CREATE TABLE IF NOT EXISTS refunds (
 );
 `,
   },
+  {
+    id: 2,
+    name: "manual_sourcing_workflow",
+    sql: `
+-- Orders become sourcing requests: no payment is taken until a quotation is accepted.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS client_request_id TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS orders_client_request_idx ON orders (client_request_id) WHERE client_request_id IS NOT NULL;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS accepted_quote_id UUID;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS next_action TEXT NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS indicative_total_kobo BIGINT;
+UPDATE orders SET indicative_total_kobo = subtotal_kobo WHERE indicative_total_kobo IS NULL;
+
+-- Map the previous checkout statuses onto the sourcing workflow (existing history is kept).
+UPDATE orders SET status = CASE status
+  WHEN 'pending_payment' THEN 'reviewing'
+  WHEN 'payment_review' THEN 'awaiting_payment'
+  WHEN 'failed' THEN 'reviewing'
+  WHEN 'paid' THEN 'payment_confirmed'
+  WHEN 'processing' THEN 'supplier_order'
+  WHEN 'awaiting_activation' THEN 'licence_ready'
+  WHEN 'on_hold' THEN 'awaiting_approval'
+  WHEN 'partially_refunded' THEN 'refund_pending'
+  ELSE status END
+WHERE status IN ('pending_payment','payment_review','failed','paid','processing','awaiting_activation','on_hold','partially_refunded');
+
+-- Product wording: replace the old default delivery texts (admin-customised texts are left alone).
+UPDATE products SET fulfilment_note = 'Sourced manually through external suppliers after you request it. We confirm availability, licence eligibility for your country, the final price and the delivery estimate in a quotation before you pay.'
+  WHERE fulfilment_note LIKE 'Manual fulfilment: after your payment is confirmed%';
+UPDATE products SET delivery_estimate = 'Confirmed in your quotation.'
+  WHERE delivery_estimate = 'We confirm the expected activation date by email after your order is paid.';
+
+-- Fulfilment evidence per item (internal unless stated).
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS supply_evidence TEXT NOT NULL DEFAULT '';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS licence_type TEXT NOT NULL DEFAULT '';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS region_eligibility TEXT NOT NULL DEFAULT 'not_confirmed';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS region_notes TEXT NOT NULL DEFAULT '';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS actual_fulfilment_date DATE;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS delivery_method TEXT NOT NULL DEFAULT '';
+
+-- Quotations (versioned; an accepted quotation is never edited).
+CREATE TABLE IF NOT EXISTS quotes (
+  id                UUID PRIMARY KEY,
+  order_id          UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  version           INTEGER NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','sent','accepted','declined','expired','superseded')),
+  currency          TEXT NOT NULL DEFAULT 'NGN',
+  total_kobo        BIGINT NOT NULL DEFAULT 0,
+  expires_at        TIMESTAMPTZ,
+  price_checked     BOOLEAN NOT NULL DEFAULT FALSE,
+  country_suitable  BOOLEAN NOT NULL DEFAULT FALSE,
+  delivery_estimate TEXT NOT NULL DEFAULT '',
+  licence_terms     TEXT NOT NULL DEFAULT '',
+  customer_note     TEXT NOT NULL DEFAULT '',
+  internal_note     TEXT NOT NULL DEFAULT '',
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  sent_at           TIMESTAMPTZ,
+  decided_at        TIMESTAMPTZ,
+  decided_by        TEXT,
+  decision_note     TEXT NOT NULL DEFAULT '',
+  UNIQUE (order_id, version)
+);
+CREATE TABLE IF NOT EXISTS quote_lines (
+  id                 UUID PRIMARY KEY,
+  quote_id           UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  order_item_id      UUID REFERENCES order_items(id) ON DELETE SET NULL,
+  product_name       TEXT NOT NULL,
+  quantity           INTEGER NOT NULL CHECK (quantity >= 1),
+  supplier_name      TEXT NOT NULL DEFAULT '',
+  supplier_currency  TEXT NOT NULL DEFAULT 'NGN',
+  supplier_unit_cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+  fx_rate            NUMERIC(14,4) NOT NULL DEFAULT 1,
+  fees_kobo          BIGINT NOT NULL DEFAULT 0,
+  taxes_kobo         BIGINT NOT NULL DEFAULT 0,
+  delivery_kobo      BIGINT NOT NULL DEFAULT 0,
+  margin_type        TEXT NOT NULL DEFAULT 'percent' CHECK (margin_type IN ('percent','fixed')),
+  margin_value       NUMERIC(14,2) NOT NULL DEFAULT 0,
+  cost_kobo          BIGINT NOT NULL DEFAULT 0,
+  price_kobo         BIGINT NOT NULL DEFAULT 0,
+  internal_note      TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS quotes_order_idx ON quotes (order_id, version DESC);
+
+-- Payments received outside Paystack (e.g. bank transfer), recorded by an admin with evidence.
+CREATE TABLE IF NOT EXISTS manual_payments (
+  id          UUID PRIMARY KEY,
+  order_id    UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  quote_id    UUID REFERENCES quotes(id) ON DELETE SET NULL,
+  method      TEXT NOT NULL,
+  reference   TEXT NOT NULL,
+  amount_kobo BIGINT NOT NULL CHECK (amount_kobo > 0),
+  paid_on     DATE NOT NULL,
+  note        TEXT NOT NULL DEFAULT '',
+  recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+`,
+  },
 ];

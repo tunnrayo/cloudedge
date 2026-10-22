@@ -21,17 +21,20 @@ Pricing rule (from the documents): USD reference × ₦${FX_RATE_NGN_PER_USD.toL
 **Where the document's printed price differed from its own formula, the formula price is used** and the document price is shown in brackets.
 Differences of ₦1 are rounding (one document truncated, the other rounded). Larger differences are arithmetic errors in the document and those products are flagged.
 
-## Can any of these be sold online today?
-**No — not until you act.** Every product is imported as *Available on request* because:
-1. **Resale permission is unconfirmed for all ${catalogue.length} products.** Neither document establishes reseller or distribution rights. Confirm with each vendor (or an authorised distributor) that you may resell/supply the product, then set *Resale permission → authorised* in Admin → Products.
-2. **${catalogue.filter((p) => p.verification === "needs_verification").length} products have prices that need verification** (listed below) and cannot be enabled until you re-check them and change *Price verification*.
-3. Then set *Sale mode → Buy online*. The website refuses to enable online purchase while 1 or 2 is unresolved.
+## How these products are offered (manual sourcing, since v0.4.0)
+Every published product can be **requested**; none is sold directly. Catalogue prices are shown as **indicative**.
+Cloud Edge sources eligible software products through external suppliers; after a request, the admin records the supplier's
+real quotation (cost, currency, exchange rate, fees, taxes, delivery, margin) and sends the customer a quotation. The customer
+pays only after accepting it. Resale/partner status is unconfirmed for all ${catalogue.length} products and is never claimed on the website.
+
+The ${catalogue.filter((p) => p.verification === "needs_verification").length} products below show a "Price under review" note, because their indicative price is less reliable.
+To stop new requests for a product, mark it **Unavailable** in Admin → Products.
 
 ## Products whose price needs verification
 ${needs}
 
 ## Full list
-| SKU | Product | Category | Reference price (source) | Selling price | Price check | Source |
+| SKU | Product | Category | Reference price (source) | Indicative price | Price check | Source |
 |---|---|---|---|---|---|---|
 ${rows}
 `);

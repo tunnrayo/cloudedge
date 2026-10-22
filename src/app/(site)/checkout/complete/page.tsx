@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero } from "@/components/ui";
-import ClearCart from "@/components/shop/ClearCart";
 import { confirmPayment } from "@/lib/shop/orders";
 
 export const dynamic = "force-dynamic";
@@ -16,17 +15,16 @@ export default async function Complete({ searchParams }: { searchParams: Promise
   const ok = out.state === "paid" || out.state === "already_paid";
   return (
     <>
-      <PageHero eyebrow="Checkout" title={ok ? "Payment confirmed" : out.state === "pending" ? "Payment not completed yet" : "Payment status"} />
+      <PageHero eyebrow="Payment" title={ok ? "Payment confirmed" : out.state === "pending" ? "Payment not completed yet" : "Payment status"} />
       <section className="section"><div className="container narrow">
-        {ok && <ClearCart />}
         <div className={`alert ${ok ? "ok" : out.state === "pending" ? "info" : "bad"}`} role="status">
           <p><strong>{out.message}</strong>{out.orderNumber ? ` Order ${out.orderNumber}.` : ""}</p>
         </div>
-        {ok && <p>Thank you. Our team will now source your products and email the activation details. You can follow every step on your order page.</p>}
+        {ok && <p>Thank you. We verified this payment directly with Paystack. We will now place the order with our supplier and keep you updated on your order page. Delivery timing depends on the supplier; we will not promise a date until it is confirmed.</p>}
         {out.state === "pending" && <p>If you closed the payment page, you can pay from your order page. If you did pay, this page will update once Paystack confirms it — refresh in a minute.</p>}
         <div className="actions">
           {orderUrl && <Link className="btn btn-primary" href={orderUrl}>View your order</Link>}
-          <Link className="btn btn-outline" href="/products">Continue shopping</Link>
+          <Link className="btn btn-outline" href="/products">Browse software</Link>
         </div>
       </div></section>
     </>

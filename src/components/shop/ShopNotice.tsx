@@ -1,15 +1,18 @@
 import Link from "next/link";
 import { Svg } from "@/components/Icon";
 
-/** Honest summary of how prices and fulfilment work, shown at the top of the shop. */
+/** The required sourcing disclaimer, used wherever products can be requested. */
+export const SOURCING_DISCLAIMER =
+  "Cloud Edge sources eligible software products through external suppliers. Availability, final pricing, licence eligibility, and delivery time must be confirmed before your order is finalised.";
+
+/** Honest summary of how requests, prices and payment work, shown at the top of the shop. */
 export function ShopNotice() {
   return (
     <div className="note info-note" role="note">
       <Svg name="info" />
       <p>
-        Prices are in naira. Where a vendor prices in US dollars, we convert at the rate shown on the product page. Products are supplied by our team after your order
-        (we purchase or provision them from the vendor or a supplier and email activation details). Products marked <strong>Available on request</strong> are not yet sold online — you can request them.{" "}
-        <Link href="/refund-policy">Delivery &amp; refunds</Link>.
+        {SOURCING_DISCLAIMER} Prices shown are <strong>indicative</strong> naira estimates. Send a request, and we will reply with a quotation; you pay only after you accept it.{" "}
+        <Link href="/faq#sourcing">How sourcing works</Link> · <Link href="/refund-policy">Refunds &amp; delivery</Link>.
       </p>
     </div>
   );

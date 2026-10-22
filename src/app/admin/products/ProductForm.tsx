@@ -37,7 +37,7 @@ export default function ProductForm({ p }: { p?: Product }) {
           <div className="field"><label htmlFor="reference_currency">Reference currency</label><select id="reference_currency" name="reference_currency" defaultValue={d?.referenceCurrency ?? "NGN"}><option>NGN</option><option>USD</option></select></div>
           <div className="field"><label htmlFor="fx_rate">Exchange rate ₦ per US$1 <span className="opt">(USD only)</span></label><input id="fx_rate" name="fx_rate" inputMode="decimal" defaultValue={d?.fxRate ?? FX_RATE_NGN_PER_USD} /></div>
           <div className="field"><label htmlFor="markup_ngn">Markup (₦)</label><input id="markup_ngn" name="markup_ngn" inputMode="numeric" defaultValue={d?.markupNgn ?? MARKUP_NGN} /></div>
-          <div className="field"><label htmlFor="price_ngn">Selling price (₦)</label><input id="price_ngn" name="price_ngn" inputMode="numeric" defaultValue={d?.priceNgn} /></div>
+          <div className="field"><label htmlFor="price_ngn">Indicative price shown to customers (₦)</label><input id="price_ngn" name="price_ngn" inputMode="numeric" defaultValue={d?.priceNgn} /></div>
           <label className="check" style={{ marginTop: 28 }}><input type="checkbox" name="recalculate" defaultChecked={!d} /> Recalculate: reference × rate + markup</label>
           <div className="field"><label htmlFor="billing_period">Billing</label><select id="billing_period" name="billing_period" defaultValue={d?.billingPeriod ?? "year"}>{Object.entries(PERIODS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
           <div className="field"><label htmlFor="price_unit">Priced</label><select id="price_unit" name="price_unit" defaultValue={d?.priceUnit ?? "subscription"}>{Object.entries(UNITS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
@@ -54,13 +54,12 @@ export default function ProductForm({ p }: { p?: Product }) {
       </section>
 
       <section className="card">
-        <h2 className="h-small">Selling &amp; fulfilment</h2>
+        <h2 className="h-small">Requests &amp; fulfilment</h2>
         <div className="admin-grid">
           <div className="field"><label htmlFor="resale_status">Resale permission</label><select id="resale_status" name="resale_status" defaultValue={d?.resaleStatus ?? "unconfirmed"}>{Object.entries(RESALE_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select>
-            <p className="hint">Only choose “authorised” once you have confirmed the vendor allows you to resell or supply this product.</p></div>
-          <div className="field"><label htmlFor="sale_mode">Sale mode</label><select id="sale_mode" name="sale_mode" defaultValue={d?.saleMode ?? "enquiry"}><option value="enquiry">Enquiry only (“Available on request”)</option><option value="purchase">Buy online (checkout)</option></select></div>
-          <div className="field"><label htmlFor="fulfilment_type">Fulfilment</label><select id="fulfilment_type" name="fulfilment_type" defaultValue={d?.fulfilmentType ?? "manual_sourcing"}>{Object.entries(FULFILMENT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
-          <div className="field"><label htmlFor="delivery_estimate">Delivery expectation (shown to customers)</label><input id="delivery_estimate" name="delivery_estimate" defaultValue={d?.deliveryEstimate} /></div>
+            <p className="hint">Internal record. Only choose “authorised” if the vendor has confirmed it in writing. Customers are never told Cloud Edge is an authorised partner.</p></div>
+          <div className="field"><label htmlFor="fulfilment_type">Fulfilment (choose “Unavailable” to stop new requests)</label><select id="fulfilment_type" name="fulfilment_type" defaultValue={d?.fulfilmentType ?? "manual_sourcing"}>{Object.entries(FULFILMENT_LABEL).map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+          <div className="field"><label htmlFor="delivery_estimate">Delivery wording (shown to customers — do not promise days unless confirmed)</label><input id="delivery_estimate" name="delivery_estimate" defaultValue={d?.deliveryEstimate} /></div>
           <div className="field"><label htmlFor="max_quantity">Maximum quantity per order</label><input id="max_quantity" name="max_quantity" inputMode="numeric" defaultValue={d?.maxQuantity ?? 1} /></div>
           <div className="field"><label htmlFor="quantity_label">Quantity label</label><input id="quantity_label" name="quantity_label" defaultValue={d?.quantityLabel ?? "Quantity"} placeholder="e.g. Users, Licences" /></div>
           <div className="field"><label htmlFor="option_label">Customer option question <span className="opt">(optional)</span></label><input id="option_label" name="option_label" defaultValue={d?.optionLabel} placeholder="e.g. Domain name you want" /></div>

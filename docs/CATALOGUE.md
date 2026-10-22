@@ -7,11 +7,14 @@ Pricing rule (from the documents): USD reference × ₦1,333 + ₦10,000; NGN re
 **Where the document's printed price differed from its own formula, the formula price is used** and the document price is shown in brackets.
 Differences of ₦1 are rounding (one document truncated, the other rounded). Larger differences are arithmetic errors in the document and those products are flagged.
 
-## Can any of these be sold online today?
-**No — not until you act.** Every product is imported as *Available on request* because:
-1. **Resale permission is unconfirmed for all 61 products.** Neither document establishes reseller or distribution rights. Confirm with each vendor (or an authorised distributor) that you may resell/supply the product, then set *Resale permission → authorised* in Admin → Products.
-2. **26 products have prices that need verification** (listed below) and cannot be enabled until you re-check them and change *Price verification*.
-3. Then set *Sale mode → Buy online*. The website refuses to enable online purchase while 1 or 2 is unresolved.
+## How these products are offered (manual sourcing, since v0.4.0)
+Every published product can be **requested**; none is sold directly. Catalogue prices are shown as **indicative**.
+Cloud Edge sources eligible software products through external suppliers; after a request, the admin records the supplier's
+real quotation (cost, currency, exchange rate, fees, taxes, delivery, margin) and sends the customer a quotation. The customer
+pays only after accepting it. Resale/partner status is unconfirmed for all 61 products and is never claimed on the website.
+
+The 26 products below show a "Price under review" note, because their indicative price is less reliable.
+To stop new requests for a product, mark it **Unavailable** in Admin → Products.
 
 ## Products whose price needs verification
 - **CE-001 Microsoft 365 Personal** — The catalogue's source link and price are the same as Microsoft 365 Family. Confirm the Personal plan's own Nigeria price before selling.
@@ -42,7 +45,7 @@ Differences of ₦1 are rounding (one document truncated, the other rounded). La
 - **CE-061 Docker Team** — Reference price matches the official page (21 Oct 2026). Monthly equivalent of a plan the vendor bills annually. Decide whether to charge 12 months upfront before enabling purchase.
 
 ## Full list
-| SKU | Product | Category | Reference price (source) | Selling price | Price check | Source |
+| SKU | Product | Category | Reference price (source) | Indicative price | Price check | Source |
 |---|---|---|---|---|---|---|
 | CE-001 | Microsoft 365 Personal | Productivity & Office | ₦88,999/year | ₦98,999 /year | **Needs verification** | [Microsoft Nigeria Store](https://www.microsoft.com/en-ng/microsoft-365/p/microsoft-365-family/cfq7ttc0k5dm) |
 | CE-002 | Microsoft 365 Family | Productivity & Office | ₦88,999/year | ₦98,999 /year | Per catalogue | [Microsoft Nigeria Store](https://www.microsoft.com/en-ng/microsoft-365/p/microsoft-365-family/cfq7ttc0k5dm) |

@@ -27,6 +27,8 @@ that needs your Railway, Paystack and (optionally) Resend accounts. Prices check
 | `ADMIN_PASSWORD` | long password only you know (12+ characters) |
 | `ADMIN_SESSION_SECRET` | 64 random characters (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
 | `PAYSTACK_SECRET_KEY` | your **test** secret key `sk_test_…` to start (Step 2) |
+| `PAYMENTS_LIVE_ENABLED` | leave **unset** until live payments are verified (Step 2.4) |
+| `CONTACT_WHATSAPP` | optional — only a real company WhatsApp number |
 
 5. Railway redeploys. Build uses `npm run build`; start uses `npm start`; health check is `/api/health` (configured in `railway.json`).
    ✅ Deploy logs show `[db] applied migration 1 shop_core` and `[db] imported 61 catalogue products` on the first start, then `Ready`.
@@ -41,12 +43,13 @@ Do not rely on the app's own disk on Railway (it is reset on each deploy). Enabl
    - copy the **Test Secret Key** (`sk_test_…`) into Railway `PAYSTACK_SECRET_KEY`;
    - set **Test Webhook URL** to `https://YOUR-ADDRESS/api/paystack/webhook`;
    - set **Test Callback URL** to `https://YOUR-ADDRESS/checkout/complete` (the site also sends its own callback per payment).
-3. In Admin → Products, enable one product for purchase (see Step 4), buy it on the live site using one of Paystack's test cards (listed in Paystack's *Test Payments* documentation), and confirm:
-   - you return to "Payment confirmed"; the order shows **Paid** and **TEST MODE** in Admin → Orders;
+3. On the deployed site: request a product → in Admin send a quotation → accept it on the request page → pay with one of Paystack's test cards (listed in Paystack's *Test Payments* documentation), and confirm:
+   - you return to "Payment confirmed"; the order shows **Payment confirmed** and **TEST PAYMENT** in Admin;
    - the order's history shows "Payment … verified with Paystack".
 4. **Going live** (only after your Paystack business account is activated — Paystack asks for business registration details):
-   replace `PAYSTACK_SECRET_KEY` with the **Live Secret Key** `sk_live_…`, set the **Live Webhook URL** to the same webhook address, redeploy,
-   and make one small real purchase to verify. The admin dashboard shows **LIVE** when live keys are active.
+   replace `PAYSTACK_SECRET_KEY` with the **Live Secret Key** `sk_live_…`, set the **Live Webhook URL** to the same webhook address,
+   add `PAYMENTS_LIVE_ENABLED=true` (without it, live online payment stays switched off as a safety measure), redeploy,
+   and make one small real payment on a real quotation to verify. The admin dashboard shows **LIVE** when live keys are active.
    No code changes are needed to switch from test to live.
 
 ## Step 3 — Emails (recommended)
@@ -55,10 +58,10 @@ Do not rely on the app's own disk on Railway (it is reset on each deploy). Enabl
    optionally `SHOP_NOTIFY_EMAIL` / `INQUIRY_TO_EMAIL` (default: the official company email).
 3. Redeploy and place a test order: Admin → order → History shows **email sent**.
 
-## Step 4 — Make products purchasable
-All 61 products start as *Available on request* (see docs/CATALOGUE.md for why). For each product you are allowed to supply:
-Admin → Products → product → **Resale permission: authorised** → set **Price verification** after re-checking the price → **Sale mode: Buy online** → Save.
-The site will refuse to enable purchase if resale is unconfirmed or the price still needs verification.
+## Step 4 — Products and requests
+No product is sold directly. Every published product can be **requested**; customers pay only after accepting a quotation.
+Prices on the site are indicative. To stop requests for a product: Admin → Products → select it → *Mark unavailable*.
+Optional: set `CONTACT_WHATSAPP` to a real company WhatsApp number to show a WhatsApp link on request pages.
 
 ## Step 5 — Your own domain
 1. Railway → website service → **Settings → Networking → Custom Domain** → `www.yourdomain.com`.

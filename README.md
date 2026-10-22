@@ -1,14 +1,15 @@
 # Cloud Edge Technology Services Limited — Website & Online Shop
 
-Company website **and** e-commerce shop for software subscriptions and digital products:
-61-product catalogue, cart, Paystack checkout, verified payments, order tracking, customer accounts,
-and an admin area with a manual **sourcing queue** for fulfilling orders.
+Company website **and** a **manual software-sourcing shop**: a 61-product catalogue with indicative prices,
+sourcing requests (no payment at request time), admin quotations built from real supplier costs, customer
+accept/decline, payment only after acceptance (Paystack or recorded bank transfer), fulfilment records,
+request tracking, customer accounts and an admin area with work queues.
 
 **Technology:** Next.js 16 + React 19 + TypeScript · PostgreSQL · Paystack (payments) · Resend (emails, optional).
 One project contains the pages, the server code (APIs, payments, admin) and the database migrations — no separate backend.
 
 > New here? Read this file, then **PROJECT_STATUS.md** (what works / what is missing), **DEPLOYMENT.md** (go live on Railway)
-> and **docs/CATALOGUE.md** (products and why they are not yet sold online).
+> and **docs/CATALOGUE.md** (products and indicative prices).
 
 ---
 
@@ -31,7 +32,7 @@ Opening a terminal: Windows → Start → type **PowerShell**. Mac → Cmd+Space
    ADMIN_SESSION_SECRET=paste-64-random-characters
    ```
    Make the secret with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
-   To test checkout, also add your Paystack **test** key: `PAYSTACK_SECRET_KEY=sk_test_...` (Paystack dashboard → Settings → API Keys).
+   To test payment after a quotation is accepted, also add your Paystack **test** key: `PAYSTACK_SECRET_KEY=sk_test_...` (Paystack dashboard → Settings → API Keys).
 5. `npm run dev` — ✅ shows `Local: http://localhost:3000`. Open it. Stop with **Ctrl + C**.
 
 Without `DATABASE_URL`, a built-in local PostgreSQL engine stores everything in `.data/pglite` on your computer.
@@ -50,19 +51,24 @@ The 61 catalogue products are imported automatically the first time. Admin: http
 | End-to-end tests | See tests/e2e/README.md |
 
 ## 4. Pages
-**Shop:** `/products` (search, category, billing, price, availability, sort) · `/products/category/<name>` · `/products/<product>` · `/cart` · `/checkout` · `/checkout/complete` · `/orders/<number>` · `/account` (+ login/register).
+**Shop:** `/products` (search, category, billing, price, availability, sort) · `/products/category/<name>` · `/products/<product>` · `/cart` (request list) · `/checkout` (send request) · `/checkout/complete` (payment return) · `/orders/<number>` · `/account` (+ login/register).
 **Company:** `/` · `/about` · `/services` (+8) · `/solutions` · `/portfolio` · `/contact` · `/quote` · `/faq` · `/search` · `/privacy` · `/terms` · `/refund-policy`.
-**Admin (`/admin`, password):** Dashboard · Orders · Sourcing queue · Products · Inquiries.
+**Admin (`/admin`, password):** Dashboard · Requests & orders (queues: new, sourcing, quotes, awaiting payment, to fulfil, refunds, payment review) · Products · Inquiries.
 
 ## 5. Day-to-day tasks (no coding)
 | Task | Where |
 |---|---|
-| Allow a product to be bought online | Admin → Products → product → *Resale permission: authorised* → *Price verification* not "needs verification" → *Sale mode: Buy online* → Save |
-| Change a price | Admin → Products → product → Pricing (tick *Recalculate* to apply reference × rate + markup) |
+| Handle a new request | Admin → Requests → *New requests* → open → move to *Sourcing in progress* → contact suppliers → *Supplier option found* / *Availability confirmed* |
+| Send a quotation | Same page → **Quotation**: per item enter supplier, currency, unit cost, exchange rate, fees, taxes, delivery, margin → *Save draft and calculate* → tick *price checked* and *suitable for country* → *Send quotation* |
+| Customer replied by email/phone | Quotation box → *How the customer decided* → *Record acceptance / decline* |
+| Price changed before payment | Save and send a revised quotation — the customer must accept again (accepted quotes are never edited) |
+| Customer pays by bank transfer | Order → Payment → *Send payment instructions*; when the money arrives → *Record a payment received* (exact amount) |
+| Fulfil | After *Payment confirmed* → *Supplier order in progress* → per item record supplier, supply evidence, licence type, region eligibility, dates, delivery method and customer instructions → mark item *Delivered* → order *Fulfilled* |
+| Cannot source | Unpaid: set *Unavailable* with a message. Paid: *Refund pending* → record the refund |
+| Stop requests for a product | Admin → Products → select → *Mark unavailable* |
+| Change an indicative price | Admin → Products → product → Pricing (tick *Recalculate* to apply reference × rate + markup) |
 | Hide / add / delete a product | Admin → Products (bulk actions, *Add product*, *Delete*) |
 | Replace a product image | Admin → Products → product → Image (PNG/JPEG/WebP ≤ 2 MB, stored in the database) |
-| Fulfil an order | Admin → Sourcing queue → order → per item: supplier, link, price, **your cost**, ETA, tracking, status → mark *Delivered* with activation details → set order *Fulfilled* |
-| Supplier price changed | Set order **On hold** with a message → customer approves or asks for refund on their order page |
 | Refund | Admin → order → Refund (through Paystack, or record a manual refund) |
 | Company text, services, FAQ | `src/lib/site.ts` · Legal pages: `src/app/(site)/privacy|terms|refund-policy/page.tsx` |
 
@@ -70,7 +76,7 @@ The 61 catalogue products are imported automatically the first time. Admin: http
 | Problem | Fix |
 |---|---|
 | `npm` not found | Install Node.js LTS, reopen the terminal |
-| Checkout says payment is not set up | Set `PAYSTACK_SECRET_KEY` and restart/redeploy |
+| Request page says online payment is not set up | Set `PAYSTACK_SECRET_KEY` (and, for live keys, `PAYMENTS_LIVE_ENABLED=true`) and redeploy — or send payment instructions instead |
 | Admin is "locked" | Set `ADMIN_PASSWORD` (12+) and `ADMIN_SESSION_SECRET` (32+) |
 | `/api/health` shows database unavailable | `DATABASE_URL` wrong or database stopped — check Railway |
 | Styles look old after edits | Stop server, delete `.next`, `npm run dev` |

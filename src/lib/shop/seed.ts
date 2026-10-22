@@ -11,8 +11,8 @@ export const SEED_VERSION = "2026-10-21-v1";
 const FEATURED = new Set(["microsoft-365-family", "google-workspace-business-starter-annual", "adobe-creative-cloud-all-apps", "norton-360-deluxe", "bitdefender-total-security", "github-copilot-pro"]);
 
 export const DEFAULT_FULFILMENT_NOTE =
-  "Manual fulfilment: after your payment is confirmed, Cloud Edge purchases or provisions this product from the vendor or a supplier and emails you the activation instructions. If the supplier's price or availability has changed, we will ask for your approval or refund you before going ahead.";
-export const DEFAULT_DELIVERY_ESTIMATE = "We confirm the expected activation date by email after your order is paid.";
+  "Sourced manually through external suppliers after you request it. We confirm availability, licence eligibility for your country, the final price and the delivery estimate in a quotation before you pay.";
+export const DEFAULT_DELIVERY_ESTIMATE = "Confirmed in your quotation.";
 
 export async function seedCatalogueIfNeeded(db: Db, force = false): Promise<number> {
   if (!force) {

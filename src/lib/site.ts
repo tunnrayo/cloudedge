@@ -146,12 +146,21 @@ export const faqs = [
   { q: "How do I start a project?", a: "Send a project inquiry using the Request a Quote form, describing what you need. We will reply by email to discuss scope and next steps." },
   { q: "Do I need to know my budget?", a: "No. The budget field is optional. A rough range helps us suggest a realistic approach, but you can leave it blank." },
   { q: "Can you give a fixed price immediately?", a: "Pricing depends on scope. We prefer to understand your requirements first, then provide a written estimate." },
-  { q: "How do I buy software from your shop?", a: "Products marked “Buy online” can be added to your cart and paid for securely with Paystack. Products marked “Available on request” are not sold online yet — send a request and we will confirm availability and price by email." },
-  { q: "How are products delivered?", a: "After your payment is confirmed, our team purchases or provisions the product from the vendor or a supplier and emails you the activation details. You can follow progress on your order page. See the Refund & Delivery Policy for details." },
-  { q: "Why are prices in naira but based on US dollar prices?", a: "Many vendors price in US dollars. Each product page shows the vendor's reference price, its source, the exchange rate used and the date the price was checked." },
+  { q: "How do I get software from your shop?", a: "Add the software you need to your request list and send a sourcing request. We check availability, licence eligibility for your country and the final price with external suppliers, then email you a quotation. You pay only after you accept it." },
+  { q: "Why are shop prices called indicative?", a: "They are estimates based on each vendor's published price, converted to naira. The real cost depends on the supplier, exchange rate, fees and your country, so the final price is the one in your quotation." },
   { q: "Where are you located?", a: "Our registered address is Suite 306B, Samfa Plaza, Ndola Crescent, Wuse Zone 5, Abuja, FCT, Nigeria." },
   { q: "Do you work with clients outside Nigeria?", a: "We welcome inquiries from Nigerian and international clients. Send the details of your project and we will discuss what is practical." },
   { q: "What happens to the information I send?", a: "It is used only to respond to your inquiry. See the Privacy Policy for details of what is stored and for how long." },
+];
+
+/** Questions about the manual software-sourcing process (shown on the FAQ page under #sourcing). */
+export const sourcingFaqs = [
+  { q: "How does software sourcing work?", a: "Cloud Edge sources eligible software products through external suppliers. You send a request; we check availability, licence eligibility and the current price; we send a quotation; you accept it and pay; we then place the order with the supplier and deliver the licence or activation instructions. Cloud Edge is not an authorised partner of the software brands unless a product page says so." },
+  { q: "Why must my request be confirmed before I pay?", a: "Availability, final pricing, licence eligibility, and delivery time must be confirmed before your order is finalised. Supplier prices and stock change, and some licences are only valid in certain countries. Sending a request does not secure the product and does not charge you." },
+  { q: "When do I pay?", a: "Only after you have accepted a quotation. We then give you a payment option — a secure Paystack link where online payment is available, or payment instructions from Cloud Edge. Your payment counts as confirmed only after we verify it with the payment provider or our bank account. We never ask for payment before a quotation is accepted." },
+  { q: "How long does delivery take?", a: "It depends on the product and the supplier. We do not promise a delivery time until the supplier has confirmed it; your quotation shows the confirmed estimate, and your request page shows progress." },
+  { q: "What if you cannot source a product?", a: "We tell you on your request page and by email (where email is set up), and nothing is charged. If you had already paid and the supplier then fails, we refund you as described in the Refund & Delivery Policy." },
+  { q: "How do I contact you about a request?", a: "Email us quoting your request reference (it starts with CE). You can also follow every update on your request page using the link in your acknowledgement email, or in your account if you sent the request while signed in." },
 ];
 
 export const inquiryTypes = [

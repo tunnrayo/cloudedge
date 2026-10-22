@@ -5,8 +5,8 @@ import { ShopNotice } from "@/components/shop/ShopNotice";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = {
-  title: "Shop Software & Digital Products",
-  description: "Microsoft 365, Google Workspace, Adobe, Norton, Bitdefender, developer tools, VPN, backup and cloud services, priced in naira by Cloud Edge Technology Services Limited.",
+  title: "Request Software & Digital Products",
+  description: "Microsoft 365, Google Workspace, Adobe, Norton, Bitdefender, developer tools, VPN, backup and cloud services, sourced on request by Cloud Edge Technology Services Limited, with indicative naira prices and a quotation before you pay.",
   alternates: { canonical: "/products" },
 };
 
@@ -14,7 +14,7 @@ export default async function Products({ searchParams }: { searchParams: Promise
   return (
     <>
       <PageHero eyebrow="Shop" title="Software, subscriptions & digital products" crumbs={[{ label: "Products" }]}
-        intro="Business software, security, creative, developer and cloud products — priced in naira, with reference prices and sources shown on every product." />
+        intro="Business software, security, creative, developer and cloud products, sourced on request. Indicative naira prices are shown; we confirm availability and the final price in a quotation before you pay." />
       <section className="section tight">
         <div className="container">
           <ShopNotice />

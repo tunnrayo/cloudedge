@@ -119,7 +119,7 @@ export default async function Home() {
           <div className="container">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "end", gap: 20, flexWrap: "wrap" }}>
               <SectionHead eyebrow="Shop" title="Software & digital products" id="products-title">
-                <p>Productivity, security, creative, developer and cloud products — priced in naira with the vendor reference price shown.</p>
+                <p>Productivity, security, creative, developer and cloud products we can source for you through external suppliers. Prices are indicative; send a request and we confirm availability and the final price in a quotation.</p>
               </SectionHead>
               <Link className="link-arrow" href="/products" style={{ marginBottom: 40 }}>Browse all products <Svg name="arrow" /></Link>
             </div>

@@ -42,9 +42,9 @@ export default function AddToCart({ slug, name, maxQuantity, quantityLabel, opti
         </div>
       )}
       <div role="alert">{error && <p className="err" id="atc-err">{error}</p>}</div>
-      <button type="button" className="btn btn-primary" style={{ width: "100%" }} onClick={add}>Add to cart</button>
+      <button type="button" className="btn btn-primary" style={{ width: "100%" }} onClick={add}>Request this software</button>
       <div role="status" aria-live="polite">
-        {added && <p className="added-msg">Added {name} to your cart. <Link href="/cart">View cart</Link></p>}
+        {added && <p className="added-msg">Added {name} to your request list. <Link href="/cart">Review and send your request</Link></p>}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-/** POST /api/cart/quote — current server prices and purchase availability for the items in a cart. */
+/** POST /api/cart/quote — indicative prices and request availability for the items in a request list. */
 import { NextResponse } from "next/server";
 import { quoteCart } from "@/lib/shop/orders";
 

@@ -15,7 +15,7 @@ export default async function Catalogue({ params, fixedCategory }: { params: Cat
   const filters: ListFilters = {
     q: params.q?.trim().slice(0, 80) || undefined, category, billing: BILLING.some(([v]) => v && v === params.billing) ? params.billing : undefined,
     min: num(params.min), max: num(params.max), sort: params.sort && SORTS[params.sort] ? params.sort : "featured",
-    availability: params.availability === "purchase" || params.availability === "enquiry" ? params.availability : undefined,
+    availability: params.availability === "available" || params.availability === "unavailable" ? params.availability : undefined,
   };
   const products = await listProducts(filters);
   const total = counts.reduce((a, c) => a + c.count, 0);
@@ -45,7 +45,7 @@ export default async function Catalogue({ params, fixedCategory }: { params: Cat
           <div className="field small"><label htmlFor="f-min">Min ₦</label><input id="f-min" name="min" inputMode="numeric" pattern="[0-9]*" defaultValue={params.min ?? ""} /></div>
           <div className="field small"><label htmlFor="f-max">Max ₦</label><input id="f-max" name="max" inputMode="numeric" pattern="[0-9]*" defaultValue={params.max ?? ""} /></div>
           <div className="field"><label htmlFor="f-av">Availability</label>
-            <select id="f-av" name="availability" defaultValue={filters.availability ?? ""}><option value="">All</option><option value="purchase">Buy online</option><option value="enquiry">On request</option></select></div>
+            <select id="f-av" name="availability" defaultValue={filters.availability ?? ""}><option value="">All</option><option value="available">Available to request</option><option value="unavailable">Currently unavailable</option></select></div>
           <div className="field"><label htmlFor="f-sort">Sort by</label>
             <select id="f-sort" name="sort" defaultValue={filters.sort}>{Object.keys(SORTS).map((s) => <option key={s} value={s}>{SORT_LABEL[s]}</option>)}</select></div>
           <div className="filter-actions">

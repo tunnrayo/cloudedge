@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/admin-session";
 import ProductImage from "@/components/shop/ProductImage";
-import { getProductById, imageUrl, purchaseBlockers } from "@/lib/shop/products";
+import { getProductById, imageUrl, requestBlockers } from "@/lib/shop/products";
 import ProductForm from "../ProductForm";
 import { deleteProductAction } from "../../shop-actions";
 
@@ -13,7 +13,7 @@ export default async function EditProduct({ params, searchParams }: { params: Pr
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const p = await getProductById(id);
   if (!p) notFound();
-  const blockers = purchaseBlockers(p);
+  const blockers = requestBlockers(p);
   return (
     <>
       <p><Link href="/admin/products">← Products</Link> · <Link href={`/products/${p.slug}`} target="_blank">View on website</Link></p>
@@ -25,8 +25,8 @@ export default async function EditProduct({ params, searchParams }: { params: Pr
         <div className="stack">
           <div className="card"><ProductImage src={imageUrl(p)} alt={p.imageAlt} /><p className="hint">{p.imageId ? "Uploaded image" : `Generated image: ${p.imagePath}`}</p></div>
           <div className={`alert ${blockers.length ? "info" : "ok"}`}>
-            <p><strong>{blockers.length ? "Not sold online" : "Sold online"}</strong></p>
-            {blockers.length > 0 && <ul className="small" style={{ margin: "6px 0 0" }}>{blockers.map((b) => <li key={b}>{b}</li>)}</ul>}
+            <p><strong>{blockers.length ? "Customers cannot request this product" : "Customers can request this product (no online purchase — quotation first)"}</strong></p>
+            {blockers.length > 0 && <ul className="small" style={{ margin: "6px 0 0" }}>{blockers.map((b: string) => <li key={b}>{b}</li>)}</ul>}
           </div>
           <div className="card small"><strong>Source document:</strong> {p.sourceDocument || "added in admin"}</div>
           <form action={deleteProductAction} className="card danger-zone">

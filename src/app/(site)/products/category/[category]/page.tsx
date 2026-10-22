@@ -13,7 +13,7 @@ async function find(slug: string) {
 }
 export async function generateMetadata({ params }: P): Promise<Metadata> {
   const c = await find((await params).category).catch(() => undefined);
-  return c ? { title: `${c} — Shop`, description: `${c} products priced in naira from Cloud Edge Technology Services Limited.`, alternates: { canonical: `/products/category/${categorySlug(c)}` } } : {};
+  return c ? { title: `${c} — Shop`, description: `${c} products sourced on request by Cloud Edge Technology Services Limited — indicative naira prices, quotation before payment.`, alternates: { canonical: `/products/category/${categorySlug(c)}` } } : {};
 }
 export default async function CategoryPage({ params, searchParams }: P) {
   const c = await find((await params).category);

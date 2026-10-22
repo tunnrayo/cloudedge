@@ -1,44 +1,57 @@
-# Project Status — v0.3.0 (21 October 2026)
+# Project Status — v0.4.0 (22 October 2026)
+
+**Business model now implemented: manual software sourcing reseller.** Customers browse the catalogue, send a sourcing
+request (no payment), receive a quotation, accept it, and only then pay. Cloud Edge sources the product from external
+suppliers after payment and records the fulfilment evidence.
 
 ## Summary table
 | | Item | State |
 |---|---|---|
 | ✅ | Company website (all pages, design, SEO, accessibility, security headers) | Completed & tested |
-| ✅ | Combined catalogue: 61 products from both Word documents, in the database | Completed & tested |
-| ✅ | 61 distinct product images (official brand logos + plan details) + manifest | Completed & tested |
-| ✅ | Search, category pages, filters (category, billing, price, availability), sorting | Completed & tested |
-| ✅ | Product pages: price, billing, reference price, source, FX rate, check date, licence, fulfilment | Completed & tested |
-| ✅ | Cart (persists across refresh), quantities, options, server-side totals | Completed & tested |
-| ✅ | Checkout validation, pending orders, Paystack redirect, server verification, webhook (signed, idempotent), failed/abandoned/mismatch handling, retry | Completed & tested **against a mock Paystack** |
-| ✅ | Customer order page & status tracking; guest secure link; customer accounts | Completed & tested |
-| ✅ | Admin: dashboard, orders, sourcing queue (supplier, cost, margin, ETA, tracking), on-hold approval, fulfilment, refunds, CSV | Completed & tested |
-| ✅ | Admin: add / edit / hide / delete products, prices, images, flags, bulk actions, guardrails | Completed & tested |
-| ✅ | Local development without installing a database (PGlite) | Completed & tested |
-| ⏳ | Real Paystack payments | Implemented — **awaiting your Paystack keys** (test first, then live) |
+| ✅ | Catalogue: 61 products, images, categories, search, filters, sorting (kept from v0.3) | Completed & tested |
+| ✅ | Indicative-price labelling + required sourcing disclaimer on cards, product pages, request list, request form, policies | Completed & tested |
+| ✅ | Request list → request form → review step → submit; reference number + acknowledgement; no payment at submission | Completed & tested |
+| ✅ | Duplicate-submission protection (request id), unique references, server validation, unavailable products blocked | Completed & tested |
+| ✅ | Admin quotation builder (supplier currency, cost, FX, fees, taxes, delivery, % or fixed margin → server-calculated price), expiry, "price checked" and "suitable for customer's country" confirmations | Completed & tested |
+| ✅ | Customer accept / decline on the request page; admin can record a decision given by email/phone; revisions supersede and need re-approval; accepted quotes never edited | Completed & tested |
+| ✅ | 16 order statuses with enforced transitions (Payment confirmed only by verified payment; Fulfilled only with complete fulfilment records) | Completed & tested |
+| ✅ | Paystack payment only after acceptance, for the accepted amount; server verification + signed, deduplicated webhook; mismatch held for review | Completed & tested **against a mock Paystack** |
+| ✅ | Manual (bank transfer) payment recording with exact-amount check and confirmation; payment-instructions message | Completed & tested |
+| ✅ | Fulfilment record per item (supplier/channel, supply evidence, licence type, region eligibility, dates, delivery method, customer instructions) | Completed & tested |
+| ✅ | Notifications for every step (acknowledgement, quotation, order confirmation, payment instructions, payment confirmation, updates, unavailable, cancellation, refund, fulfilled) — recorded honestly as sent / failed / not configured | Completed & tested (email provider not configured) |
+| ✅ | Queues: new, sourcing, quotes, awaiting payment, to fulfil, refunds, payment review; next-action field; expiry clean-up | Completed & tested |
+| ✅ | Supplier costs, supplier names, internal notes visible to admins only | Completed & tested |
+| ✅ | FAQ (6 sourcing questions), Terms (request ≠ guarantee), Refund & Delivery Policy (accurate cancellations/refunds), Privacy (fewer fields) | Completed — **draft wording, needs legal review** |
+| ✅ | Migration of existing v0.3 data (no reset) | Tested on a database containing v0.3 orders: all rows kept, statuses mapped |
+| ⏳ | Real Paystack payments | Implemented — **awaiting your Paystack test key**; live keys additionally need `PAYMENTS_LIVE_ENABLED=true` |
 | ⏳ | Customer/staff emails | Implemented — **awaiting Resend key + verified domain** |
 | ⏳ | Live deployment | Ready (railway.json, health check) — **awaiting your Railway project** |
-| 🔒 | Selling the 61 products online | **Requires your confirmation of resale permission** (all unconfirmed) and re-checking 26 flagged prices |
 
-## Products that cannot be sold online yet (and why)
-- **All 61:** resale/distribution permission is not established in the documents → imported as *Available on request*.
-- **26 also need price verification** (listed in docs/CATALOGUE.md): annual-commitment or annual-billed plans priced monthly (Adobe Teams ×3, Slack, Otter, Webflow, Cloudflare, Postman ×2, Docker ×2), promotional/introductory/starting prices (Parallels, Acronis, Surfshark, Namecheap, DigitalOcean, Render, Vercel), document arithmetic errors (Adobe CC Pro Plus +₦200, Bitdefender Premium +₦14, Norton Deluxe Plus I +₦179, Plus II +₦169, Premium I +₦54), Microsoft 365 Personal (source link is the Family page), Figma (official price differs: US$12–15 vs US$16), Slack & JetBrains (official page showed no price), Zoom (App Store in-app price).
-
-## Images
-Real product photos/box shots are not used: these are digital subscriptions, vendor marketing images are copyrighted and partner-licensed, and the build environment cannot download from vendor websites. Each product instead has a distinct image built from the **official brand logo** (open-licence logo packages) plus plan details; 4 brands without an available logo (Parallels, Acronis, IDrive, Otter.ai) have a clearly labelled typographic placeholder. Upload approved images any time in Admin → Products. See docs/PRODUCT_IMAGES.md.
+## Readiness verdict
+| Capability | Ready? |
+|---|---|
+| Browsing the catalogue | **Yes** (once deployed) |
+| Submitting sourcing requests | **Yes** (once deployed with a PostgreSQL database) |
+| Creating and sending quotations | **Yes** — but customers only learn about a quotation on their request page until email (Resend) is configured, so email them manually meanwhile |
+| Test payments | **Yes, after you add a Paystack `sk_test_` key** and set the webhook URL (tested here only against a mock) |
+| Live payments | **No — not yet.** Needs: activated Paystack business account, live key, webhook, a full test-mode run on the deployed site, then `PAYMENTS_LIVE_ENABLED=true`. Bank-transfer payments recorded by the admin work without Paystack. |
 
 ## Known limitations
 - Rate limiting is in memory (per server instance; resets on restart).
-- One shared admin password (no per-staff accounts/audit trail).
-- No password-reset email for customers yet (customers can email the company; guest order links always work).
-- Renewals are not automated; recurring products are sold for the period shown.
-- Supplier APIs: none integrated (no credentials/agreements) — fulfilment is the manual sourcing workflow.
+- One shared admin password (no per-staff accounts/audit of which staff member acted).
+- No password-reset email for customers yet.
+- Quotations are in NGN only (supplier currency is converted with the rate the admin records).
+- Expired quotations are closed when an admin presses "Close expired quotations" (customers already cannot accept an expired quote).
+- No supplier API integration (none available) — sourcing is manual by design.
+- Orders created before v0.4.0 that were awaiting payment were moved to "Reviewing request" (they had no quotation).
 
 ## Known errors
-None found: typecheck, lint, 30 unit tests, production build, 37 + 71 end-to-end checks, 48 responsive screenshots all pass.
+None found: typecheck, lint, 44 unit tests, production build, 37 + 109 end-to-end checks pass.
 
-## Next actions
+## Next actions (owner)
 1. Create the Railway project + PostgreSQL and set variables (DEPLOYMENT.md Step 1).
-2. Add Paystack **test** key, set webhook, place a test order (Step 2).
-3. Confirm resale permission and prices product-by-product; enable purchase (Step 4).
-4. Resend + domain; then switch Paystack to live keys after account activation.
+2. Add the Paystack **test** key and webhook; run one full request → quote → accept → pay on the deployed site.
+3. Add Resend + a verified domain so quotations and updates are emailed.
+4. Decide your bank-transfer instructions text (company account) for the "Send payment instructions" box.
 5. Have Privacy, Terms and Refund & Delivery policies reviewed by a lawyer.
+6. Only after all of the above: live Paystack key + `PAYMENTS_LIVE_ENABLED=true`.

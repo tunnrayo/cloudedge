@@ -495,9 +495,15 @@ dl.sum .total { font-family: var(--font-head); font-weight: 700; color: var(--na
 .timeline { list-style: none; padding: 0; margin: 0; display: grid; gap: 12px; border-left: 2px solid var(--line); padding-left: 16px; }
 .timeline time { font-size: 0.8rem; color: var(--muted); }
 .timeline p { margin: 2px 0 0; font-size: 0.93rem; }
-.status-pill.paid, .status-pill.fulfilled { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-text); }
-.status-pill.processing, .status-pill.awaiting_activation, .status-pill.pending_payment, .status-pill.on_hold, .status-pill.payment_review { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-text); }
-.status-pill.failed, .status-pill.cancelled, .status-pill.refunded, .status-pill.partially_refunded { background: var(--bad-bg); border-color: var(--bad-line); color: var(--bad-text); }
+.status-pill.payment_confirmed, .status-pill.fulfilled, .status-pill.licence_ready, .status-pill.availability_confirmed { background: var(--ok-bg); border-color: var(--ok-line); color: var(--ok-text); }
+.status-pill.quote_sent, .status-pill.awaiting_approval, .status-pill.awaiting_payment, .status-pill.supplier_order, .status-pill.refund_pending, .status-pill.sourcing, .status-pill.supplier_found { background: var(--amber-bg); border-color: var(--amber-line); color: var(--amber-text); }
+.status-pill.request_received, .status-pill.reviewing { background: #e7f0ff; border-color: #bcd4ff; color: var(--blue-600); }
+.status-pill.unavailable, .status-pill.cancelled, .status-pill.refunded { background: var(--bad-bg); border-color: var(--bad-line); color: var(--bad-text); }
+.quote-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.quote-table th, .quote-table td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.quote-table td.num, .quote-table th.num { text-align: right; white-space: nowrap; }
+.quote-table tfoot td { font-weight: 700; border-bottom: 0; }
+.steps-mini { display: grid; gap: 6px; padding-left: 1.2em; margin: 0; }
 /* Admin extras */
 .admin-tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 22px; }
 .admin-tabs a { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: #fff; color: var(--navy); text-decoration: none; font-size: 0.9rem; font-weight: 500; }

@@ -47,19 +47,16 @@ export const priceSuffix = (p: Pick<Product, "billingPeriod" | "priceUnit" | "bi
 export const priceLabel = (p: Product) => `${naira(p.priceNgn)} ${priceSuffix(p)}`;
 
 /**
- * A product can be bought online only when ALL of these are true. This rule is enforced on the
- * server at checkout; the admin cannot switch a product to "purchase" without meeting it.
+ * Manual sourcing: any published product can be REQUESTED (no payment at request time).
+ * An admin can mark a product unavailable (fulfilment "unavailable") to stop new requests.
  */
-export function purchaseBlockers(p: Pick<Product, "status" | "saleMode" | "resaleStatus" | "priceVerification" | "fulfilmentType">): string[] {
+export function requestBlockers(p: Pick<Product, "status" | "fulfilmentType">): string[] {
   const out: string[] = [];
   if (p.status !== "published") out.push("Product is not published.");
-  if (p.resaleStatus !== "authorised") out.push("Resale permission has not been confirmed as authorised.");
-  if (p.priceVerification === "needs_verification") out.push("Price is marked as needing verification.");
-  if (p.fulfilmentType === "unavailable") out.push("Fulfilment is set to unavailable.");
-  if (p.saleMode !== "purchase") out.push("Sale mode is set to enquiry.");
+  if (p.fulfilmentType === "unavailable") out.push("Product is marked unavailable.");
   return out;
 }
-export const isPurchasable = (p: Product) => purchaseBlockers(p).length === 0;
+export const isRequestable = (p: Product) => requestBlockers(p).length === 0;
 
 export type ListFilters = { q?: string; category?: string; billing?: string; min?: number; max?: number; sort?: string; availability?: string };
 export const SORTS: Record<string, string> = {
@@ -86,8 +83,8 @@ export async function listProducts(f: ListFilters = {}, opts: { admin?: boolean 
   if (f.billing) { params.push(f.billing); where.push(`billing_period = $${params.length}`); }
   if (f.min != null && Number.isFinite(f.min)) { params.push(f.min); where.push(`price_ngn >= $${params.length}`); }
   if (f.max != null && Number.isFinite(f.max)) { params.push(f.max); where.push(`price_ngn <= $${params.length}`); }
-  if (f.availability === "purchase") where.push("sale_mode = 'purchase' AND resale_status = 'authorised' AND price_verification <> 'needs_verification' AND fulfilment_type <> 'unavailable'");
-  if (f.availability === "enquiry") where.push("NOT (sale_mode = 'purchase' AND resale_status = 'authorised' AND price_verification <> 'needs_verification' AND fulfilment_type <> 'unavailable')");
+  if (f.availability === "available") where.push("fulfilment_type <> 'unavailable'");
+  if (f.availability === "unavailable") where.push("fulfilment_type = 'unavailable'");
   const order = SORTS[f.sort ?? "featured"] ?? SORTS.featured;
   const sql = `SELECT * FROM products ${where.length ? "WHERE " + where.join(" AND ") : ""} ORDER BY ${order}`;
   return (await db.query(sql, params)).rows.map(rowToProduct);

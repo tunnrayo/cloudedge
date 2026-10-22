@@ -2,16 +2,17 @@
 import { useEffect, useState } from "react";
 import type { CartItem } from "./cart-store";
 
+/** One line of the request list, with the INDICATIVE catalogue price (final price comes in the quotation). */
 export type QuoteLine = {
   slug: string; name: string; sku: string; image: string; quantity: number; maxQuantity: number; quantityLabel: string;
   unitPriceNgn: number; lineTotalNgn: number; billingLabel: string; optionLabel: string; optionRequired: boolean; option: string;
-  purchasable: boolean; blockers: string[]; fulfilmentNote: string;
+  requestable: boolean; blockers: string[]; priceVerification: string;
 };
-export type Quote = { lines: QuoteLine[]; subtotalNgn: number; totalNgn: number; allPurchasable: boolean; removed: string[] };
+export type Quote = { lines: QuoteLine[]; indicativeTotalNgn: number; allRequestable: boolean; removed: string[] };
 
-/** Asks the server for current prices whenever the cart changes. */
-const EMPTY: Quote = { lines: [], subtotalNgn: 0, totalNgn: 0, allPurchasable: false, removed: [] };
+const EMPTY: Quote = { lines: [], indicativeTotalNgn: 0, allRequestable: false, removed: [] };
 
+/** Asks the server for current indicative prices whenever the request list changes. */
 export function useQuote(items: CartItem[]) {
   const [state, setState] = useState<{ key: string; quote: Quote | null; error: string }>({ key: "", quote: null, error: "" });
   const key = JSON.stringify(items);
@@ -25,7 +26,6 @@ export function useQuote(items: CartItem[]) {
     return () => ctrl.abort();
   }, [key]);
   if (!items.length) return { quote: EMPTY, error: "", loading: false };
-  // While a new quote loads, keep showing the previous one (marked as loading).
   return { quote: state.quote, error: state.key === key ? state.error : "", loading: state.key !== key };
 }
 export const ngn = (n: number) => "₦" + Math.round(n).toLocaleString("en-NG");

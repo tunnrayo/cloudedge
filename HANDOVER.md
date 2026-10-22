@@ -3,7 +3,7 @@
 Say: *"Continue the Cloud Edge website in https://github.com/tunnrayo/cloudedge. Read HANDOVER.md and PROJECT_STATUS.md first. Do not rebuild completed work."*
 
 ## Current state
-v0.4.0 — company website + **manual software sourcing reseller**: catalogue → request (no payment) → admin quotation → customer accepts → payment (Paystack after acceptance, or recorded bank transfer) → supplier order → fulfilment record. All tests pass.
+v0.5.0 (working tree, uncommitted; last commit dafe111 = v0.4.0) — company website + **manual software sourcing reseller**: catalogue → request (no payment) → admin quotation → customer accepts → payment (Paystack after acceptance, or recorded bank transfer) → supplier order → fulfilment record. All tests pass.
 **Not deployed.** Git: branch `main`, remote `origin` = https://github.com/tunnrayo/cloudedge.git (private). Never force-push.
 
 ## Fixed facts (change only on the owner's instruction)
@@ -32,6 +32,12 @@ public/products/*.svg         generated product images; docs/product-image-manif
 scripts/                      unit tests, image generator, catalogue report, db-setup
 tests/e2e/                    browser end-to-end suites + mock Paystack
 ```
+
+## v0.5.0 additions (read ARCHITECTURE.md → Platform)
+- Pure framework-free modules in `src/lib` (relative `.ts` imports so `node --test` can run them): `admin-sessions.ts`, `audit.ts`, `health-core.ts`, `services-core.ts`, `email-core.ts`, `request-guard.ts`, `image-upload.ts`, `local-db-path.ts`, `pglite-adapter.ts`, `migrate.ts`, `db-types.ts`. Server-only wrappers: `admin-session.ts`, `audit-server.ts`, `health.ts`, `services.ts`.
+- New admin pages: `/admin/services`, `/admin/audit`, `/admin/health` (+ `/admin/health/report`). Migrations 3 (`admin_security_and_audit`) and 4 (`managed_services`).
+- Tests: `scripts/platform.test.ts` (unit) and `tests/e2e/platform.e2e.mjs` (+ `mock-resend.mjs`).
+- Single administrator by design (document limitation); no per-staff accounts.
 
 ## Key decisions
 - **Database is the source of truth** for products after the first import; the admin manages them (no code edits).

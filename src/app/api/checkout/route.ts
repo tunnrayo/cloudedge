@@ -8,7 +8,7 @@ import { isClientRequestId, normalizeCheckout, validateCheckout } from "@/lib/sh
 import { WorkflowError, createRequest } from "@/lib/shop/orders";
 import { currentCustomer } from "@/lib/shop/customers";
 import { clientIp, rateLimited } from "@/lib/rate-limit";
-import { sameOrigin } from "@/lib/request-guard";
+import { readJson, sameOrigin } from "@/lib/request-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,8 +16,9 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: "Request blocked." }, { status: 403 });
   if (rateLimited(`request:${clientIp(req.headers)}`, 10, 10 * 60_000)) return NextResponse.json({ ok: false, error: "Too many requests. Please wait a few minutes." }, { status: 429 });
-  let body: { customer?: unknown; items?: unknown; requestId?: unknown };
-  try { body = await req.json(); } catch { return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 }); }
+  const parsed = await readJson(req, 60_000);
+  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: parsed.status });
+  const body = (parsed.body && typeof parsed.body === "object" ? parsed.body : {}) as { customer?: unknown; items?: unknown; requestId?: unknown };
   const customer = normalizeCheckout(body.customer);
   const errors = validateCheckout(customer);
   if (Object.keys(errors).length) return NextResponse.json({ ok: false, error: "Please correct the highlighted fields.", errors }, { status: 422 });

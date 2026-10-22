@@ -1,20 +1,24 @@
-# Testing — results of 22 October 2026 (v0.4.0, manual sourcing)
+# Testing — results of 22 October 2026 (v0.5.0)
 
-Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 18.4, mock Paystack API (tests/e2e/mock-paystack.mjs).
+Environment: Linux, Node.js 22.22, Chromium (Playwright build 1194), PostgreSQL 18.4, mock Paystack (tests/e2e/mock-paystack.mjs), mock Resend (tests/e2e/mock-resend.mjs). Each end-to-end suite ran against a fresh database and a freshly started production server.
 
 | Check | Result |
 |---|---|
-| `npm run typecheck` | Pass |
-| `npm run lint` | Pass (0 problems) |
-| `npm test` — 44 unit tests (pricing, catalogue, webhook signature, request validation, request id, **workflow transitions, quote maths, quote validation, expiry, fulfilment record gaps**, inquiry validation, admin sessions) | 44/44 |
-| `npm run build` | Pass |
-| Migration 2 on a database holding v0.3 data (5 orders, 1 customer, 29 events, 61 products) — no reset | Pass: all rows kept; statuses mapped (paid → Payment confirmed, unpaid pending → Reviewing request, mismatch → Awaiting payment + payment review); product delivery wording updated |
-| tests/e2e/site.e2e.mjs (company site, inquiries, admin) | 37/37 |
-| tests/e2e/shop.e2e.mjs (full sourcing workflow) | 109/109 |
+| `npx tsc --noEmit` (typecheck) | PASS |
+| `npm run lint` | PASS (0 errors, 0 warnings) |
+| `npm test` — unit tests | PASS 93/93 (adds `scripts/platform.test.ts`: local DB folder regression incl. real PGlite open/restart, migrations, sessions, sign-in limit, audit, health, services, portfolio, request guard, email) |
+| `npm run build` | PASS |
+| `npm audit --omit=dev` (what ships) | PASS — 0 vulnerabilities |
+| `npm audit` (incl. dev tools) | WARNING — 5 *high* advisories, all in the lint tooling chain (`eslint-config-next` → `braces`); not shipped to the live site; the only offered fix is a breaking downgrade, so it was not applied |
+| tests/e2e/site.e2e.mjs | PASS 37/37 |
+| tests/e2e/shop.e2e.mjs | PASS 116/116 (incl. new payment-safety checks: wrong currency, failed attempt, `charge.failed`, success for a failed transaction, malformed signed body, missing signature, unknown reference) |
+| tests/e2e/platform.e2e.mjs | PASS 100/100 |
+| Responsive/console sweep (dev server, 390/768/1280 px, 90 page loads incl. 8 admin pages ×3 widths, 384 images) | PASS — no horizontal overflow, no broken images, no console errors, no dead internal links on real routes (a mistyped category slug in the sweep script correctly returned 404) |
+| Clean start of the real app with no `.data` folder and no `DATABASE_URL` | PASS — `/api/health` ok, `.data/pglite` created, migrations applied |
+| Secret scan of the project files | PASS — no real keys or passwords; only obviously fake fixtures inside the redaction tests |
 
-### Sourcing journey covered (109 checks)
-Browsing: search, category + sort, billing filter, 61 distinct unbroken images, indicative prices + required disclaimer, no "Buy"/"Add to cart" wording, no Offer structured data, no authorised-partner claim · **unavailable product**: bulk-marked, not requestable on its page, filter, rejected by server (409) · request list: count, persistence, indicative totals, "payment now: none" · **request submission**: validation, review step, reference + acknowledgement ("not an order confirmation"), status Request received, unpaid, no payment record, exactly one row, list cleared, acknowledgement email recorded as *not configured* · **duplicates & references**: same request id → same reference, no second row, secret link not re-issued; 4 requests → 4 unique references; browser prices ignored; cross-site POST blocked; country required · **no payment before acceptance**: pay API 409, no Pay button, forged webhook and fake success page change nothing · **admin**: queue, only valid next statuses offered, history logged · **quotation**: server-calculated totals (USD and NGN lines, % and fixed margins), cannot send without price/country confirmations, status Quote sent, email recorded · **customer view**: total, delivery estimate, licence terms shown; supplier name, costs, margins, internal notes and public API all free of internal data; acceptance needs confirmation tick; acceptance → Awaiting payment; order-confirmation email separate · **revision**: v2 supersedes accepted v1 (v1 amount unchanged), back to Quote sent, payment blocked until re-accepted · **Paystack (mock)**: Pay button for accepted amount, initialised with that amount, early return does not pay, verified success → Payment confirmed, duplicate webhook ignored, bad signature 401, no second payment · admin-recorded customer decision · pay API needs link/login · **underpaid "success" held for review** · **manual payment**: wrong amount rejected, confirmation required, success → Payment confirmed with record; no payment form without accepted quote · **fulfilment**: Fulfilled/Cancelled not offered on a paid order; item cannot be Delivered without the record; Fulfilled offered once complete; customer sees instructions, no supplier data · notifications recorded for every step · **unavailable / refund / expiry**: unpaid → Unavailable; paid → Refund pending (not Cancelled); manual full refund → Refunded; expired quote not offered; admin closes expired quotes · access control (no token, wrong token, anonymous admin pages and CSV) · accounts (weak password, scrypt, prefill, request in account, owner access, sign-out) · image upload · FAQ topics, Terms, Refund policy wording · **mobile (390 px)**: request list, review step and request page without horizontal overflow · no browser errors.
+## What the platform suite proves (examples)
+Forged, guessed, injected, expired, idle and revoked cookies are all refused; a copied cookie stops working the moment the administrator signs out; after 5 wrong passwords even the right password is refused; the audit table cannot be updated or deleted even by direct SQL; hostile text in an audit row is shown as text; the Health page and JSON never contain the password, session secret, API keys or database URL; an unreachable database gives 503 on `/api/health`, marketing pages still render and admin sign-in refuses; production without `DATABASE_URL` does not silently use a local database; a draft service is 404 publicly but previewable; a published service's address cannot be changed even with a tampered form; services customers enquired about cannot be deleted; restarting/second instance never duplicates services or overwrites edits; provider email failures never lose the inquiry and are never reported as sent; header injection is neutralised.
 
-## Not tested (requires your accounts)
-Real Paystack test/live keys and webhook delivery from Paystack's servers · real email delivery (Resend) · Railway deployment, custom domain, HTTPS · screen-reader walkthrough and Lighthouse · browsers other than Chromium.
-**Live payments have not been tested and must not be assumed to work.**
+## NOT tested (needs your accounts or other tools)
+Real Paystack test/live keys and webhook delivery from Paystack's servers · real email delivery through Resend · Railway deployment, custom domain, HTTPS, backups · screen-reader walkthrough and Lighthouse · browsers other than Chromium · load/performance testing · penetration testing. **Live payments have not been tested and must not be assumed to work.**

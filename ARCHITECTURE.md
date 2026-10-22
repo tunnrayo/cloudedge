@@ -35,3 +35,13 @@ Server-side prices and quotation maths; supplier data only in admin pages/CSV; P
 
 ## Persistence on Railway
 Everything durable is in PostgreSQL (including uploaded images). The app filesystem is treated as disposable. PGlite (local file DB) is refused in production unless explicitly allowed.
+
+
+## Platform (v0.5.0)
+- **Admin sessions:** cookie `ce_admin` = 64-hex random token (HttpOnly, SameSite=Strict, Secure in production). Table `admin_sessions` stores only HMAC-SHA256(token, ADMIN_SESSION_SECRET), created/last-seen/expires/revoked. Lifetime 8 h, idle 2 h. Logout revokes; sign-in revokes the session of an old cookie presented with it; "Sign out all other devices". `src/proxy.ts` only checks the cookie shape; every admin page, server action and download calls `requireAdmin()` which validates against the database and fails closed. Sign-in attempts in `admin_login_attempts` (hashed IP): 5 failures per IP and 60 global per 15 minutes.
+- **Audit log:** `audit_log` is append-only (trigger rejects UPDATE/DELETE). `writeAudit` (throws; used inside the same transaction as the change) and `recordAudit` (never throws; failures counted and shown on Health). `redact()` strips secrets/tokens from details. Viewer: `/admin/audit`.
+- **Services:** table `services` (draft/published/inactive, sort order, category, optional price text, optional image). Seeded once from `defaultServices` in `src/lib/site.ts` (marker `services_seeded` in `meta`). Public pages read through `getPublishedServices()` (30 s cache, cleared on edits, falls back to the built-in list if the database fails). `inquiryTypes` for forms is the static list derived from the defaults.
+- **Health:** `runHealth()` assembles checks from `health-core.ts`; secrets are never part of results. Public `/api/health` = `{ok}` only.
+- **Request guard:** `readJson` (415/413/400) and `sameOrigin` for all public POST routes.
+- **Email:** `sendViaResend` — validated addresses, single-line subject, one retry (network/429/5xx) with the same Idempotency-Key, result is only `sent` or `failed`.
+- **Rate limiter limitation:** public-form limits are per-process memory (see PROJECT_STATUS). A shared limiter was not built because a single Railway instance is the intended deployment; admin sign-in limiting is database-backed.

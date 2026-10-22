@@ -10,6 +10,7 @@ import { getStore } from "@/lib/inquiries";
 import { emailConfigured, sendInquiryEmail } from "@/lib/email";
 import { clientIp, rateLimited } from "@/lib/rate-limit";
 import { getProduct } from "@/lib/shop/products";
+import { readJson, sameOrigin } from "@/lib/request-guard";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,19 +20,12 @@ const fallback = `Please email us directly at ${company.email}.`;
 
 export async function POST(req: Request) {
   // Block cross-site form posts from other websites.
-  const origin = req.headers.get("origin");
-  const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host");
-  if (origin && host) {
-    let originHost = "";
-    try { originHost = new URL(origin).host; } catch { /* malformed origin */ }
-    if (originHost !== host) return fail(403, "Request blocked.");
-  }
+  if (!sameOrigin(req)) return fail(403, "Request blocked.");
 
   if (rateLimited(`inq:${clientIp(req.headers)}`, 5, 10 * 60_000)) return fail(429, "Too many messages sent in a short time. Please wait a few minutes and try again.");
-  if (Number(req.headers.get("content-length") ?? 0) > 20_000) return fail(413, "Your message is too long.");
-
-  let body: unknown;
-  try { body = await req.json(); } catch { return fail(400, "Invalid request."); }
+  const parsed = await readJson(req, 20_000);
+  if (!parsed.ok) return fail(parsed.status, parsed.error);
+  const body = parsed.body;
 
   const input = normalize(body);
   if (input.website) return NextResponse.json({ ok: true }); // honeypot filled: quietly ignore bots

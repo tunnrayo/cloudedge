@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Icon, { Svg } from "@/components/Icon";
 import { Cta, PageHero, SectionHead } from "@/components/ui";
-import { services, solutions } from "@/lib/site";
+import { solutions } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 
 export const metadata: Metadata = {
   title: "Solutions",
@@ -10,9 +11,12 @@ export const metadata: Metadata = {
   alternates: { canonical: "/solutions" },
 };
 
-const title = (slug: string) => services.find((s) => s.slug === slug)?.title ?? slug;
+export const dynamic = "force-dynamic";
 
-export default function Solutions() {
+export default async function Solutions() {
+  const services = await getPublishedServices();
+  // Only link to services that are currently published (an admin may have unpublished one).
+  const title = (slug: string) => services.find((s) => s.slug === slug)?.title;
   return (
     <>
       <PageHero eyebrow="Solutions" title="Technology solutions built around business problems" crumbs={[{ label: "Solutions" }]}
@@ -26,7 +30,7 @@ export default function Solutions() {
                 <h2 style={{ fontSize: "1.15rem", marginTop: 18 }}>{s.title}</h2>
                 <p>{s.text}</p>
                 <p className="label" style={{ marginTop: 18, fontSize: ".8rem", color: "var(--muted)" }}>Services involved</p>
-                <ul className="tag-list">{s.services.map((slug) => <li key={slug}><Link href={`/services/${slug}`}>{title(slug)}</Link></li>)}</ul>
+                <ul className="tag-list">{s.services.filter((slug) => title(slug)).map((slug) => <li key={slug}><Link href={`/services/${slug}`}>{title(slug)}</Link></li>)}</ul>
               </article>
             ))}
           </div>

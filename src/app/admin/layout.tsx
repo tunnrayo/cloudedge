@@ -15,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="container">
           <Link href="/admin">{company.short} · Admin</Link>
           <nav aria-label="Admin">
-            {signedIn && <><Link href="/admin">Dashboard</Link><Link href="/admin/orders">Orders</Link><Link href="/admin/orders?queue=sourcing">Sourcing queue</Link><Link href="/admin/products">Products</Link><Link href="/admin/inquiries">Inquiries</Link></>}
+            {signedIn && <><Link href="/admin">Dashboard</Link><Link href="/admin/orders">Orders</Link><Link href="/admin/orders?queue=sourcing">Sourcing queue</Link><Link href="/admin/products">Products</Link><Link href="/admin/inquiries">Inquiries</Link><Link href="/admin/services">Services</Link><Link href="/admin/health">Health</Link><Link href="/admin/audit">Audit log</Link></>}
             <Link href="/">View website</Link>
             {signedIn && <form action={logout}><button type="submit">Sign out</button></form>}
           </nav>

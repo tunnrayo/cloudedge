@@ -1,9 +1,11 @@
 import Link from "next/link";
 import Image from "next/image";
-import { company, nav, social, services } from "@/lib/site";
+import { company, nav, social } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 import { Svg } from "@/components/Icon";
 
-export default function Footer() {
+export default async function Footer() {
+  const services = await getPublishedServices();
   const year = new Date().getFullYear();
   return (
     <footer className="site-footer">

@@ -1,16 +1,16 @@
 /**
- * Runs before admin requests. Redirects anyone without a valid admin session to the login page.
- * (Each admin page and action ALSO checks the session itself — this is the first line of defence.)
+ * Runs before admin requests. First, cheap line of defence: anyone without a session cookie of the right shape
+ * is sent to the login page. This does NOT prove the session is valid — every admin page, action and download
+ * checks the session against the database itself (requireAdmin / isAdmin), so a forged cookie that passes this
+ * shape check still gets nothing.
  */
 import { NextResponse, type NextRequest } from "next/server";
-import { adminConfig, SESSION_COOKIE, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE, looksLikeToken } from "@/lib/admin-sessions";
 
-export async function proxy(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
   if (pathname === "/admin/login") return NextResponse.next();
-  const cfg = adminConfig();
-  const ok = cfg.ok && (await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value, cfg.secret));
-  if (!ok) {
+  if (!looksLikeToken(req.cookies.get(SESSION_COOKIE)?.value)) {
     const url = req.nextUrl.clone();
     url.pathname = "/admin/login";
     url.search = "";

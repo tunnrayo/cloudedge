@@ -33,7 +33,11 @@ const clean = (v: unknown, max: number) =>
 export function normalize(raw: unknown): InquiryInput {
   const r = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
   const out = {} as InquiryInput;
-  (Object.keys(LIMITS) as (keyof typeof LIMITS)[]).forEach((k) => { (out as Record<string, string>)[k] = clean(r[k], LIMITS[k]); });
+  // Only the two free-text boxes may contain line breaks; every other field is a single line.
+  (Object.keys(LIMITS) as (keyof typeof LIMITS)[]).forEach((k) => {
+    const v = clean(r[k], LIMITS[k]);
+    (out as Record<string, string>)[k] = k === "scope" || k === "message" ? v : v.replace(/[\r\n\t]+/g, " ");
+  });
   out.mode = r.mode === "quote" ? "quote" : "contact";
   out.email = out.email.toLowerCase();
   return out;

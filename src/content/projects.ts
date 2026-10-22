@@ -5,8 +5,8 @@
  *                 Demo concepts are NOT client projects and are always labelled on the website.
  * kind: "client" = a genuine, completed project. Only add with the client's approval.
  *
- * When real projects exist, add them with kind: "client" and set settings.showDemoProjects = false
- * in src/lib/site.ts to hide the demos.
+ * Demo concepts are hidden on the public site unless the environment variable SHOW_DEMO_PROJECTS=true is set.
+ * When real, approved projects exist, add them with kind: "client"; they are always shown.
  */
 
 export type Project = {

@@ -1,6 +1,6 @@
 # Deployment Guide — putting the shop online (Railway)
 
-**Current state:** code is complete and on GitHub (https://github.com/tunnrayo/cloudedge, branch `main`). It has **not** been deployed:
+**Current state:** v0.4.0 is on GitHub (https://github.com/tunnrayo/cloudedge, branch `main`); v0.5.0 is local and not yet pushed. Nothing has been deployed:
 that needs your Railway, Paystack and (optionally) Resend accounts. Prices checked 21 Oct 2026 — confirm on each provider's site.
 
 | Item | Needed? | Cost (Oct 2026) |
@@ -26,13 +26,14 @@ that needs your Railway, Paystack and (optionally) Resend accounts. Prices check
 | `NEXT_PUBLIC_SITE_URL` | same as `SITE_URL` |
 | `ADMIN_PASSWORD` | long password only you know (12+ characters) |
 | `ADMIN_SESSION_SECRET` | 64 random characters (`node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`) |
+| `SHOW_DEMO_PROJECTS` | leave **unset** (demo portfolio concepts stay hidden) |
 | `PAYSTACK_SECRET_KEY` | your **test** secret key `sk_test_…` to start (Step 2) |
 | `PAYMENTS_LIVE_ENABLED` | leave **unset** until live payments are verified (Step 2.4) |
 | `CONTACT_WHATSAPP` | optional — only a real company WhatsApp number |
 
 5. Railway redeploys. Build uses `npm run build`; start uses `npm start`; health check is `/api/health` (configured in `railway.json`).
    ✅ Deploy logs show `[db] applied migration 1 shop_core` and `[db] imported 61 catalogue products` on the first start, then `Ready`.
-6. Open `https://YOUR-ADDRESS/api/health` → ✅ `{"ok":true,"database":"postgres","payments":"test"}`.
+6. Open `https://YOUR-ADDRESS/api/health` → ✅ `{"ok":true}` (it deliberately shows nothing else). Then sign in at `/admin/login` and open **Health** for the detailed checks.
 
 **Persistence:** orders, customers, products and uploaded images are stored in PostgreSQL, so redeploys do not lose them.
 Do not rely on the app's own disk on Railway (it is reset on each deploy). Enable Postgres backups in Railway if your plan offers them, and use Admin → Orders → Export CSV regularly.
@@ -80,3 +81,50 @@ Database changes are applied automatically by numbered migrations (`src/lib/migr
 - [ ] Order and payment emails arrive (if Resend configured)
 - [ ] Refund test in test mode
 - [ ] Switch to live keys; one small real purchase; refund it if desired
+
+
+---
+# Railway readiness details (v0.5.0)
+
+## A. Before the first deploy
+- Use a **different** strong `ADMIN_PASSWORD` (16+ characters) and a **separate** random `ADMIN_SESSION_SECRET` (generate with the command above). Never reuse the example values from the tests.
+- `DATABASE_URL` must be the Railway PostgreSQL reference `${{Postgres.DATABASE_URL}}`. If it is missing in production the site **refuses** to use a local database: `/api/health` answers 503 and the admin Health page shows FAIL. (`ALLOW_PGLITE_IN_PRODUCTION=true` overrides this only for experiments; data is lost on each redeploy.)
+- Set `SITE_URL` and `NEXT_PUBLIC_SITE_URL` to the final public https address (no trailing slash). Changing `NEXT_PUBLIC_SITE_URL` needs a **new build**.
+- Migrations run automatically on start (a database lock stops two instances from migrating at once). Never edit an existing migration; add a new one.
+- Files to confirm: `railway.json` (build `npm run build`, start `npm start`, health check `/api/health`).
+
+## B. Local database vs live database
+| | Your computer | Railway |
+|---|---|---|
+| `DATABASE_URL` | empty | `${{Postgres.DATABASE_URL}}` |
+| Database | built-in PGlite in `.data/pglite` (created automatically, including parent folders; override with `PGLITE_DIR`) | PostgreSQL service |
+| Data survives redeploy? | yes (your folder) | yes (Postgres) — the app disk is **not** used |
+
+## C. Paystack (test first)
+1. Paystack dashboard → Settings → API Keys & Webhooks → copy the **test** secret key (`sk_test_…`) into `PAYSTACK_SECRET_KEY`.
+2. Set the **test webhook URL** to `https://YOUR-DOMAIN/api/paystack/webhook`.
+3. Do a full test: request → quotation → accept → pay with a Paystack test card. Then admin → Health shows *Paystack webhook deliveries: PASS* only after Paystack really called the webhook, and *Test Paystack connection* confirms the key.
+4. Live keys stay OFF for customers until `PAYMENTS_LIVE_ENABLED=true`. Nothing in this project has been verified against the real Paystack.
+
+## D. Email (Resend)
+Add and verify your sending domain in Resend (DNS records at your registrar), create an API key, set `RESEND_API_KEY`, `INQUIRY_FROM_EMAIL` (address on the verified domain), optionally `INQUIRY_TO_EMAIL`, `SHOP_FROM_EMAIL`. Then Admin → Health → **Test email connection** (it checks the key and that the sender domain is verified; it does not send a message). Send a real test inquiry to confirm delivery. Until then emails show as "not configured" and inquiries are still saved.
+
+## E. Logs, backups, recovery
+- Logs: Railway → service → Deployments → View logs. The app never logs passwords, keys, session tokens or message text. Look for `[db] applied migration …` after deploys.
+- Backups: Railway PostgreSQL → Backups (plan dependent). Also export CSVs (Admin → Orders / Inquiries). To restore: create a new Postgres service, restore the backup into it, point `DATABASE_URL` at it, redeploy.
+- Failed deploy: Railway → Deployments → open the last good deployment → **Redeploy**. Database migrations are additive; a rollback of the app keeps working with the newer tables. If `/api/health` is 503, read the logs, then Admin → Health (if you can sign in) for the failing check.
+- Images and uploads live in the database; no volume is needed.
+
+## F. After deploying — verification checklist (do these yourself; none has been run on Railway)
+- [ ] `https://YOUR-DOMAIN/api/health` → `{"ok":true}`
+- [ ] Admin sign-in works; wrong password is refused; **Health** shows no FAIL (WARNINGs explained)
+- [ ] Health: database PASS, migrations PASS (4 applied), site address PASS, email PASS after the test button, payments TEST mode
+- [ ] `/services`, a service page, `/portfolio` (empty state), `/sitemap.xml`
+- [ ] Send a Contact and a Quote inquiry → appear under Admin → Inquiries; email arrives if Resend is set
+- [ ] Admin → Audit log shows your sign-in and actions
+- [ ] Paystack test payment end to end; webhook check turns PASS
+- [ ] Sign out, then confirm `/admin` redirects to the login page
+
+## G. How to manage services and portfolio
+- **Services:** Admin → Services → *Add a service* (saved as Draft) → **Preview** → **Publish**. Use *Make inactive* to stop offering it (the old address shows a polite "not currently offered" page). A published service cannot be deleted; a service customers enquired about is kept for your records. Show prices only if the owner has approved them (price text is optional).
+- **Portfolio:** add only real, approved projects in `src/content/projects.ts` (see the comments there) and redeploy. Demo concepts appear only if `SHOW_DEMO_PROJECTS=true`, labelled "Demo concepts, not client work".

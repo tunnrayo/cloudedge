@@ -14,7 +14,7 @@ export default function Privacy() {
       <PageHero eyebrow="Legal" title="Privacy Policy" crumbs={[{ label: "Privacy Policy" }]} intro="Last updated: 22 October 2026 (draft)" />
       <section className="section">
         <div className="container narrow prose">
-          <Note><p><strong>Draft wording for review.</strong> This policy has not been reviewed by a lawyer. Have it checked, including against the Nigeria Data Protection Act 2023, before relying on it.</p></Note>
+          <Note><p><strong>Draft wording for review.</strong> This policy has not been reviewed by a lawyer. Have it checked, including against the Nigeria Data Protection Act 2023 (lawful basis, retention period, cross-border transfers, any registration duty), before relying on it.</p></Note>
 
           <h2>Who we are</h2>
           <p>This website is operated by {company.name} (RC {company.rc}), {company.address.join(", ")} (&ldquo;Cloud Edge&rdquo;, &ldquo;we&rdquo;, &ldquo;us&rdquo;). We are responsible for the personal information you submit through it.</p>
@@ -36,7 +36,7 @@ export default function Privacy() {
 
           <h2>Where it is stored and who can see it</h2>
           <ul>
-            <li>Orders, accounts and inquiries are stored in a secured database used by this website. Only authorised Cloud Edge staff can view them, through a password-protected admin area.</li>
+            <li>Orders, accounts and inquiries are stored in a secured database used by this website. Only people authorised by Cloud Edge can view them, through a password-protected admin area. Administrator sign-ins and changes made in the admin area are recorded in an audit log (who, what and when; a one-way hash of the IP address, never passwords).</li>
             <li>Payments are processed by Paystack, which handles your card details under its own privacy policy.</li>
             <li>To check availability or fulfil an order we may share the necessary details (never your payment details) with an external supplier or the product&apos;s vendor.</li>
             <li>When email notifications are switched on, a copy of your inquiry is sent to our company mailbox through our email delivery provider (Resend).</li>
@@ -53,7 +53,7 @@ export default function Privacy() {
           <p>You can ask to see, correct or delete the information you sent us, or object to how we use it. Email <a href={`mailto:${company.email}`}>{company.email}</a> with your request and, if you have it, your inquiry reference. You may also complain to the Nigeria Data Protection Commission.</p>
 
           <h2>Security</h2>
-          <p>We use reasonable measures such as encrypted connections (HTTPS), access controls and input validation. No website can be guaranteed completely secure.</p>
+          <p>We use reasonable measures such as access controls, input validation and, when the site is served over HTTPS, encrypted connections. No website can be guaranteed completely secure.</p>
 
           <h2>Changes</h2>
           <p>We may update this policy as the website changes. The date at the top shows the latest version.</p>

@@ -22,8 +22,11 @@ export const social: { label: string; href: string }[] = [];
 
 /** Website behaviour switches. */
 export const settings = {
-  /** Show the clearly labelled DEMO portfolio concepts. Set to false once real, approved projects are added. */
-  showDemoProjects: true,
+  /**
+   * Demo portfolio concepts are HIDDEN by default. Set the environment variable SHOW_DEMO_PROJECTS=true to show them
+   * (they are always labelled "Demo concepts, not client work"). Read on the server only.
+   */
+  showDemoProjects: typeof process !== "undefined" && process.env.SHOW_DEMO_PROJECTS === "true",
 };
 
 export const nav = [
@@ -46,11 +49,18 @@ export type Service = {
   items: string[];
   goodFor: string[];
   inquiryType: string;
+  /** Present on services loaded from the database (admin-managed). */
+  category?: string;
+  priceText?: string;
+  imageId?: string | null;
+  imageAlt?: string;
+  status?: "draft" | "published" | "inactive";
 };
 
 // Proposed service categories based on the company's registered business purpose.
 // Each one needs business confirmation before being treated as an active, staffed offering.
-export const services: Service[] = [
+/** Built-in service descriptions. They are copied into the database ONCE (see services-core.ts); after that the admin Services area is the source of truth. */
+export const defaultServices: Service[] = [
   {
     slug: "software-development", title: "Software Development", icon: "code", inquiryType: "Software development",
     summary: "Custom software built around how your business actually works.",
@@ -165,7 +175,7 @@ export const sourcingFaqs = [
 
 export const inquiryTypes = [
   "General inquiry",
-  ...services.map((s) => s.inquiryType),
+  ...defaultServices.map((s) => s.inquiryType),
   "Product enquiry",
   "Partnership",
   "Other",

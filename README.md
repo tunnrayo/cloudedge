@@ -44,7 +44,7 @@ The 61 catalogue products are imported automatically the first time. Admin: http
 | `npm run dev` | Development server |
 | `npm run build` / `npm start` | Production build / run it |
 | `npm run check` | Typecheck + lint + unit tests + build (run before every deploy) |
-| `npm test` | 30 unit tests (pricing, catalogue, webhook signature, validation, admin login) |
+| `npm test` | 93 unit tests (pricing, catalogue, webhooks, validation, admin sessions, audit, health, services, email, local database) |
 | `npm run db:setup` | Create all tables in `DATABASE_URL` (optional — the site does this itself) |
 | `npm run images:generate` | Rebuild the 61 product images + manifest (only if the seed catalogue changes) |
 | `npm run catalogue:report` | Rebuild docs/CATALOGUE.md and docs/database/schema.sql |
@@ -53,7 +53,7 @@ The 61 catalogue products are imported automatically the first time. Admin: http
 ## 4. Pages
 **Shop:** `/products` (search, category, billing, price, availability, sort) · `/products/category/<name>` · `/products/<product>` · `/cart` (request list) · `/checkout` (send request) · `/checkout/complete` (payment return) · `/orders/<number>` · `/account` (+ login/register).
 **Company:** `/` · `/about` · `/services` (+8) · `/solutions` · `/portfolio` · `/contact` · `/quote` · `/faq` · `/search` · `/privacy` · `/terms` · `/refund-policy`.
-**Admin (`/admin`, password):** Dashboard · Requests & orders (queues: new, sourcing, quotes, awaiting payment, to fulfil, refunds, payment review) · Products · Inquiries.
+**Admin (`/admin`, password):** Dashboard · Requests & orders (queues: new, sourcing, quotes, awaiting payment, to fulfil, refunds, payment review) · Products · Inquiries · **Services** (add/edit/publish) · **Health** (live checks) · **Audit log**. Preview on your computer: `npm run dev`, open http://localhost:3000, admin at http://localhost:3000/admin/login (needs ADMIN_PASSWORD and ADMIN_SESSION_SECRET in `.env.local`).
 
 ## 5. Day-to-day tasks (no coding)
 | Task | Where |

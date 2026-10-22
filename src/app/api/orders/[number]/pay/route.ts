@@ -6,7 +6,7 @@
 import { NextResponse } from "next/server";
 import { canView, getOrderByNumber, startPayment, WorkflowError } from "@/lib/shop/orders";
 import { currentCustomer } from "@/lib/shop/customers";
-import { sameOrigin } from "@/lib/request-guard";
+import { readJson, sameOrigin } from "@/lib/request-guard";
 import { clientIp, rateLimited } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
@@ -15,13 +15,16 @@ export async function POST(req: Request, ctx: { params: Promise<{ number: string
   if (!sameOrigin(req)) return NextResponse.json({ ok: false, error: "Request blocked." }, { status: 403 });
   if (rateLimited(`pay:${clientIp(req.headers)}`, 10, 10 * 60_000)) return NextResponse.json({ ok: false, error: "Too many attempts. Please wait a few minutes." }, { status: 429 });
   const { number } = await ctx.params;
-  const body = (await req.json().catch(() => ({}))) as { t?: string };
+  const parsed = await readJson(req, 2_000);
+  if (!parsed.ok) return NextResponse.json({ ok: false, error: parsed.error }, { status: parsed.status });
+  const body = (parsed.body && typeof parsed.body === "object" ? parsed.body : {}) as { t?: unknown };
+  const t = typeof body.t === "string" ? body.t.slice(0, 200) : "";
   const order = await getOrderByNumber(number);
   const me = await currentCustomer();
-  if (!order || !canView(order, body.t, me?.id ?? null)) return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
+  if (!order || !canView(order, t, me?.id ?? null)) return NextResponse.json({ ok: false, error: "Order not found." }, { status: 404 });
   if (order.payment_status === "paid") return NextResponse.json({ ok: false, error: "This order is already paid." }, { status: 409 });
   try {
-    const r = await startPayment(order, body.t ?? "");
+    const r = await startPayment(order, t);
     return NextResponse.json({ ok: true, authorizationUrl: r.authorizationUrl });
   } catch (e) {
     if (e instanceof WorkflowError) return NextResponse.json({ ok: false, error: e.message }, { status: e.status });

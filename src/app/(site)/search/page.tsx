@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Svg } from "@/components/Icon";
 import { PageHero } from "@/components/ui";
-import { faqs, services, solutions } from "@/lib/site";
+import { faqs, solutions } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 import { listProducts, priceLabel } from "@/lib/shop/products";
 
 export const dynamic = "force-dynamic";
@@ -23,6 +24,7 @@ export default async function Search({ searchParams }: { searchParams: Promise<{
   const q = ((await searchParams).q ?? "").trim().slice(0, 100);
   const terms = q.toLowerCase().split(/\s+/).filter((t) => t.length > 1);
   const products = terms.length ? await listProducts({ q }).catch(() => []) : [];
+  const services = await getPublishedServices();
   const all: Result[] = [
     ...services.map((s) => ({ kind: "Service", title: s.title, text: s.summary, href: `/services/${s.slug}`, body: [s.problem, s.what, ...s.items].join(" ") })),
     ...solutions.map((s) => ({ kind: "Solution", title: s.title, text: s.text, href: "/solutions" })),

@@ -27,6 +27,10 @@ http.createServer(async (req, res) => {
     if (!auth) return send(res, 401, { status: false, message: "Invalid key" });
     refunds++; return send(res, 200, { status: true, message: "Refund has been queued for processing", data: { id: refunds, status: "pending" } });
   }
+  if (req.method === "GET" && url.pathname === "/bank") { // harmless authenticated read used by the admin "Test Paystack connection" button
+    if (!auth) return send(res, 401, { status: false, message: "Invalid key" });
+    return send(res, 200, { status: true, message: "Banks retrieved", data: [{ name: "Mock Bank" }] });
+  }
   if (req.method === "GET" && url.pathname.startsWith("/pay/")) { // fake hosted checkout page
     const ref = url.pathname.split("/").pop();
     return send(res, 200, `<html><body><h1>Mock Paystack checkout</h1><p id="ref">${ref}</p><a id="succeed" href="/complete/${ref}?r=success">Pay</a> <a id="fail" href="/complete/${ref}?r=failed">Fail</a></body></html>`, "text/html");

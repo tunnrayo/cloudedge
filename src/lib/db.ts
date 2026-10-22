@@ -9,17 +9,14 @@
  * Migrations (src/lib/migrations.ts) run automatically, once, the first time the database is used.
  */
 import "server-only";
-import path from "node:path";
-import { MIGRATIONS } from "@/lib/migrations";
+import { localDbDir, prepareLocalDbDir } from "@/lib/local-db-path";
+import { applyMigrations } from "@/lib/migrate";
+import { wrapPglite } from "@/lib/pglite-adapter";
 import { seedCatalogueIfNeeded } from "@/lib/shop/seed";
+import { seedServicesIfNeeded } from "@/lib/services-core";
 
-export type Row = Record<string, unknown>;
-export interface Db {
-  kind: "postgres" | "pglite";
-  query<T = Row>(sql: string, params?: unknown[]): Promise<{ rows: T[]; rowCount: number }>;
-  /** Runs fn inside a transaction (BEGIN/COMMIT, ROLLBACK on error). */
-  tx<T>(fn: (q: Db["query"]) => Promise<T>): Promise<T>;
-}
+export type { Row, Db } from "@/lib/db-types";
+import type { Db } from "@/lib/db-types";
 
 export class DbUnavailableError extends Error {
   constructor(msg = "The database is not configured. Set DATABASE_URL.") { super(msg); this.name = "DbUnavailableError"; }
@@ -59,39 +56,17 @@ async function connect(): Promise<Db> {
   }
   if (!databaseConfigured()) throw new DbUnavailableError();
   const { PGlite } = await import("@electric-sql/pglite");
-  const dir = process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite");
+  const dir = localDbDir();
+  prepareLocalDbDir(dir); // creates ".data" and ".data/pglite" if missing (fixes ENOENT mkdir on a clean checkout)
+  if (process.env.NODE_ENV === "production") console.warn("[db] WARNING: using the local PGlite database in production. Data is lost when the host is redeployed. Set DATABASE_URL.");
   const pg = await PGlite.create(dir);
-  // PGlite runs one statement per query(); multi-statement scripts (migrations) go through exec().
-  const isScript = (sql: string, params: unknown[]) => !params.length && /;\s*\S/.test(sql.trim().replace(/;\s*$/, ""));
-  type Runner = { query: typeof pg.query; exec: typeof pg.exec };
-  const run = async (target: Runner, sql: string, params: unknown[] = []) => {
-    if (isScript(sql, params)) { await target.exec(sql); return { rows: [] as never[], rowCount: 0 }; }
-    const r = await target.query(sql, params);
-    return { rows: r.rows as never[], rowCount: r.affectedRows ?? r.rows.length };
-  };
-  const query: Db["query"] = (sql, params = []) => run(pg, sql, params);
-  return {
-    kind: "pglite", query,
-    async tx(fn) {
-      return pg.transaction(async (t) => fn((sql, params = []) => run(t as unknown as Runner, sql, params)));
-    },
-  };
+  return wrapPglite(pg as unknown as Parameters<typeof wrapPglite>[0]);
 }
 
 async function migrate(db: Db) {
-  await db.query(`CREATE TABLE IF NOT EXISTS schema_migrations (id INT PRIMARY KEY, name TEXT NOT NULL, applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW())`);
-  await db.tx(async (q) => {
-    // Advisory lock stops two app instances from migrating at the same time (Postgres only).
-    if (db.kind === "postgres") await q("SELECT pg_advisory_xact_lock(724519)");
-    const done = new Set((await q<{ id: number }>("SELECT id FROM schema_migrations")).rows.map((r) => Number(r.id)));
-    for (const m of MIGRATIONS) {
-      if (done.has(m.id)) continue;
-      await q(m.sql);
-      await q("INSERT INTO schema_migrations (id, name) VALUES ($1, $2)", [m.id, m.name]);
-      console.log(`[db] applied migration ${m.id} ${m.name}`);
-    }
-  });
+  await applyMigrations(db, console.log);
   await seedCatalogueIfNeeded(db);
+  await seedServicesIfNeeded(db); // one-time copy of the built-in services; never overwrites admin edits
 }
 
 /** Shared database handle. Connects, migrates and seeds on first use. */

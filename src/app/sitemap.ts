@@ -1,12 +1,14 @@
 import type { MetadataRoute } from "next";
-import { company, services } from "@/lib/site";
+import { company } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 import { categoryCounts, categorySlug, listProducts } from "@/lib/shop/products";
 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = company.siteUrl;
-  const pages = ["", "/about", "/services", "/solutions", "/products", "/portfolio", "/contact", "/quote", "/faq", "/privacy", "/terms", "/refund-policy", ...services.map((s) => `/services/${s.slug}`)];
+  const pages = ["", "/about", "/services", "/solutions", "/products", "/portfolio", "/contact", "/quote", "/faq", "/privacy", "/terms", "/refund-policy"];
+  try { pages.push(...(await getPublishedServices()).map((s) => `/services/${s.slug}`)); } catch { /* list static pages only */ }
   let shop: string[] = [];
   try {
     const [products, cats] = await Promise.all([listProducts(), categoryCounts()]);

@@ -252,6 +252,30 @@ await fetch(MOCK + "/__set", { method: "POST", body: JSON.stringify({ reference:
 const cRes = await (await fetch(`${B}/checkout/complete?reference=${refC}`)).text();
 const c2 = await one("SELECT * FROM orders WHERE id=$1", [C.id]);
 check("Underpaid 'success' → held for review, NOT paid", c2.payment_status === "amount_mismatch" && c2.status === "awaiting_payment" && cRes.includes("manual check"));
+// Further payment-safety cases on the same order (reference refC, accepted total ₦160,000)
+const cTotal = Number(C.total_kobo);
+await fetch(MOCK + "/__set", { method: "POST", body: JSON.stringify({ reference: refC, patch: { status: "success", paidAmount: cTotal, currency: "USD" } }) });
+await fetch(`${B}/checkout/complete?reference=${refC}`);
+const cCur = await one("SELECT status, payment_status FROM orders WHERE id=$1", [C.id]);
+check("Right amount but WRONG CURRENCY (USD) → held for review, NOT paid", cCur.payment_status === "amount_mismatch" && cCur.status === "awaiting_payment", JSON.stringify(cCur));
+await fetch(MOCK + "/__set", { method: "POST", body: JSON.stringify({ reference: refC, patch: { status: "failed", paidAmount: cTotal, currency: "NGN" } }) });
+const failPage = await (await fetch(`${B}/checkout/complete?reference=${refC}`)).text();
+const cFail = await one("SELECT status, payment_status, paid_at FROM orders WHERE id=$1", [C.id]);
+check("Declined/failed payment attempt → NOT paid, customer told to try again", cFail.payment_status !== "paid" && cFail.paid_at === null && cFail.status === "awaiting_payment" && /not successful|try again/i.test(failPage), JSON.stringify(cFail));
+const payCount0 = Number((await one("SELECT COUNT(*)::int n FROM orders WHERE payment_status='paid'")).n);
+const evtFail = JSON.stringify({ event: "charge.failed", data: { reference: refC } });
+check("Validly signed non-success webhook (charge.failed) changes nothing", (await webhook(evtFail)).status === 200 && Number((await one("SELECT COUNT(*)::int n FROM orders WHERE payment_status='paid'")).n) === payCount0);
+const evtOk = JSON.stringify({ event: "charge.success", data: { reference: refC } });
+await webhook(evtOk);
+check("Signed 'charge.success' webhook for a transaction Paystack reports as FAILED does not pay the order", (await one("SELECT payment_status FROM orders WHERE id=$1", [C.id])).payment_status !== "paid");
+const badJson = "{not json";
+check("Validly signed but malformed webhook body → 400", (await webhook(badJson)).status === 400);
+check("Webhook without any signature header → 401", (await fetch(B + "/api/paystack/webhook", { method: "POST", headers: { "Content-Type": "application/json" }, body: evtOk })).status === 401);
+const unknownRef = JSON.stringify({ event: "charge.success", data: { reference: "NO-SUCH-REFERENCE-123" } });
+const unk = await webhook(unknownRef);
+check("Validly signed webhook for an UNKNOWN reference → accepted, nothing paid", unk.status === 200 && Number((await one("SELECT COUNT(*)::int n FROM orders WHERE payment_status='paid'")).n) === payCount0);
+// Put the mock transaction back to the underpaid state for the sections below.
+await fetch(MOCK + "/__set", { method: "POST", body: JSON.stringify({ reference: refC, patch: { status: "success", paidAmount: 100, currency: "NGN" } }) });
 
 // ───────────── N. Manual (bank transfer) payment ─────────────
 const D = await quoteAndAccept(refs[1]);

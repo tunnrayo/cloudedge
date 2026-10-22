@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/admin-session";
+import { audit } from "@/lib/audit-server";
 import { getDb } from "@/lib/db";
 import {
   addInternalNote, completeRefund, confirmPayment, decideQuote, expireQuotes, getOrderById, recordManualPayment, recordRefund, saveDraftQuote, sendCustomerMessage,
@@ -27,8 +28,9 @@ export async function orderStatusAction(f: FormData) {
   try {
     const email = await setOrderStatus(id, status, str(f, "message", 4000), f.get("notify") === "on");
     result = email ? ` Email: ${email.replace("_", " ")}.` : "";
-  } catch (e) { back(id, errMsg(e), "err"); }
+  } catch (e) { await audit({ type: "order.status", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err"); }
   revalidatePath("/admin/orders");
+  await audit({ type: "order.status", target: "order", targetId: id, summary: `Status changed to ${status}`, details: { status, notifyCustomer: f.get("notify") === "on" } });
   back(id, `Status updated.${result}`);
 }
 
@@ -37,6 +39,7 @@ export async function orderMessageAction(f: FormData) {
   const id = str(f, "id", 40); const message = str(f, "message", 4000);
   if (message.length < 2) back(id, "Write a message first.", "err");
   const r = await sendCustomerMessage(id, message);
+  await audit({ type: "order.message", target: "order", targetId: id, summary: "Message added to the customer's request page" });
   back(id, `Message added to the customer's request page. Email: ${r.replace("_", " ")}.`);
 }
 
@@ -45,6 +48,7 @@ export async function orderNoteAction(f: FormData) {
   const id = str(f, "id", 40); const note = str(f, "note", 4000);
   if (note.length < 2) back(id, "Write a note first.", "err");
   await addInternalNote(id, note);
+  await audit({ type: "order.note", target: "order", targetId: id, summary: "Internal note added" });
   back(id, "Internal note saved.");
 }
 
@@ -52,6 +56,7 @@ export async function nextActionAction(f: FormData) {
   await requireAdmin();
   const id = str(f, "id", 40);
   await setNextAction(id, str(f, "next_action", 300));
+  await audit({ type: "order.next_action", target: "order", targetId: id, summary: "Next action updated" });
   back(id, "Next action saved.");
 }
 
@@ -67,7 +72,8 @@ export async function itemSourcingAction(f: FormData) {
       supply_evidence: str(f, "supply_evidence", 2000), licence_type: str(f, "licence_type", 200), region_eligibility: str(f, "region_eligibility", 20),
       region_notes: str(f, "region_notes", 500), actual_fulfilment_date: str(f, "actual_fulfilment_date", 10), delivery_method: str(f, "delivery_method", 200),
     });
-  } catch (e) { back(orderId, errMsg(e), "err", "#items"); }
+  } catch (e) { await audit({ type: "order.item_sourcing", outcome: "failure", target: "order_item", targetId: str(f, "item_id", 40), summary: errMsg(e) }); back(orderId, errMsg(e), "err", "#items"); }
+  await audit({ type: "order.item_sourcing", target: "order_item", targetId: str(f, "item_id", 40), summary: "Item sourcing/fulfilment record saved", details: { orderId, sourcingStatus: str(f, "sourcing_status", 40) } });
   back(orderId, "Item sourcing and fulfilment record saved.", "ok", "#items");
 }
 
@@ -92,7 +98,8 @@ export async function saveQuoteAction(f: FormData) {
       lines, expiresAt: str(f, "expires_at", 20), priceChecked: f.get("price_checked") === "on", countrySuitable: f.get("country_suitable") === "on",
       deliveryEstimate: str(f, "delivery_estimate", 300), licenceTerms: str(f, "licence_terms", 500), customerNote: str(f, "customer_note", 2000), internalNote: str(f, "internal_note", 2000),
     });
-  } catch (e) { back(id, errMsg(e), "err", "#quote"); }
+  } catch (e) { await audit({ type: "quote.save", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err", "#quote"); }
+  await audit({ type: "quote.save", target: "order", targetId: id, summary: "Draft quotation saved", details: { lines: count } });
   back(id, "Draft quotation saved. Check the calculated prices, then send it.", "ok", "#quote");
 }
 
@@ -101,8 +108,9 @@ export async function sendQuoteAction(f: FormData) {
   const id = str(f, "id", 40);
   if (f.get("confirm") !== "on") back(id, "Tick the box to confirm the quotation is correct before sending.", "err", "#quote");
   try { await sendQuote(str(f, "quote_id", 40), f.get("notify") === "on"); }
-  catch (e) { back(id, errMsg(e), "err", "#quote"); }
+  catch (e) { await audit({ type: "quote.send", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err", "#quote"); }
   revalidatePath("/admin/orders");
+  await audit({ type: "quote.send", target: "order", targetId: id, summary: "Quotation sent to customer", details: { quoteId: str(f, "quote_id", 40) } });
   back(id, "Quotation sent. The customer can accept or decline it on their request page.", "ok", "#quote");
 }
 
@@ -115,7 +123,8 @@ export async function adminDecisionAction(f: FormData) {
   const o = await getOrderById(id);
   if (!o) back(id, "Order not found", "err");
   try { await decideQuote(o!, str(f, "quote_id", 40), f.get("decision") === "accept" ? "accept" : "decline", "admin", note); }
-  catch (e) { back(id, errMsg(e), "err", "#quote"); }
+  catch (e) { await audit({ type: "quote.decision", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err", "#quote"); }
+  await audit({ type: "quote.decision", target: "order", targetId: id, summary: `Customer decision recorded: ${f.get("decision") === "accept" ? "accepted" : "declined"}`, details: { quoteId: str(f, "quote_id", 40) } });
   back(id, "Customer decision recorded.", "ok", "#quote");
 }
 
@@ -124,8 +133,9 @@ export async function manualPaymentAction(f: FormData) {
   const id = str(f, "id", 40);
   if (f.get("confirm") !== "on") back(id, "Tick the box to confirm the money has been received in the company account.", "err", "#payment");
   try { await recordManualPayment(id, { method: str(f, "method", 20), reference: str(f, "reference", 200), amountNaira: num(f, "amount"), paidOn: str(f, "paid_on", 10), note: str(f, "note", 1000) }); }
-  catch (e) { back(id, errMsg(e), "err", "#payment"); }
+  catch (e) { await audit({ type: "payment.manual", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err", "#payment"); }
   revalidatePath("/admin/orders");
+  await audit({ type: "payment.manual", target: "order", targetId: id, summary: "Manual payment recorded", details: { method: str(f, "method", 20), amountNaira: num(f, "amount") } });
   back(id, "Manual payment recorded. The order is now Payment confirmed.", "ok", "#payment");
 }
 
@@ -134,7 +144,8 @@ export async function paymentInstructionsAction(f: FormData) {
   const id = str(f, "id", 40);
   let r = "";
   try { r = await sendPaymentInstructions(id, str(f, "instructions", 3000)); }
-  catch (e) { back(id, errMsg(e), "err", "#payment"); }
+  catch (e) { await audit({ type: "payment.instructions", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err", "#payment"); }
+  await audit({ type: "payment.instructions", target: "order", targetId: id, summary: "Payment instructions sent" });
   back(id, `Payment instructions added to the request page. Email: ${r.replace("_", " ")}.`, "ok", "#payment");
 }
 
@@ -143,14 +154,16 @@ export async function refundAction(f: FormData) {
   const id = str(f, "id", 40);
   if (f.get("confirm") !== "yes") back(id, "Tick the confirmation box to record a refund.", "err");
   try { await recordRefund(id, num(f, "amount"), f.get("method") === "paystack" ? "paystack" : "manual", str(f, "reason", 500), f.get("notify") === "on"); }
-  catch (e) { back(id, errMsg(e), "err"); }
+  catch (e) { await audit({ type: "refund.record", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err"); }
+  await audit({ type: "refund.record", target: "order", targetId: id, summary: "Refund recorded", details: { amountNaira: num(f, "amount"), method: f.get("method") === "paystack" ? "paystack" : "manual" } });
   back(id, "Refund recorded.");
 }
 
 export async function completeRefundAction(f: FormData) {
   await requireAdmin();
   const id = str(f, "id", 40);
-  try { await completeRefund(id, f.get("notify") === "on"); } catch (e) { back(id, errMsg(e), "err"); }
+  try { await completeRefund(id, f.get("notify") === "on"); } catch (e) { await audit({ type: "refund.complete", outcome: "failure", target: "order", targetId: id, summary: errMsg(e) }); back(id, errMsg(e), "err"); }
+  await audit({ type: "refund.complete", target: "order", targetId: id, summary: "Order marked Refunded" });
   back(id, "Order marked Refunded.");
 }
 
@@ -160,12 +173,14 @@ export async function recheckPaymentAction(f: FormData) {
   const o = await getOrderById(id);
   if (!o?.payment_reference) back(id, "This order has no Paystack payment reference yet.", "err");
   const r = await confirmPayment(o!.payment_reference!, "admin");
+  await audit({ type: "payment.recheck", target: "order", targetId: id, summary: "Paystack payment re-checked" });
   back(id, `Paystack check: ${r.message}`, r.state === "error" ? "err" : "ok");
 }
 
 export async function expireQuotesAction() {
   await requireAdmin();
   const n = await expireQuotes();
+  await audit({ type: "quote.expire", target: "quote", targetId: "", summary: `${n} expired quotation(s) closed`, details: { closed: n } });
   redirect(`/admin/orders?queue=quotes&ok=${encodeURIComponent(`${n} expired quotation(s) closed.`)}`);
 }
 
@@ -253,6 +268,7 @@ export async function saveProductAction(f: FormData) {
     const msg = (e as { code?: string }).code === "23505" ? "Another product already uses this SKU or URL slug." : (e as Error).message;
     errBack(msg);
   }
+  await audit({ type: isNew ? "product.create" : "product.update", target: "product", targetId: productId, summary: `${isNew ? "Created" : "Updated"} product “${name}”`, details: { status: values.status, fulfilment: values.fulfilment_type, priceNgn: values.price_ngn } });
   revalidatePath("/products");
   redirect(`/admin/products/${productId}?ok=${encodeURIComponent(`Saved.${warning}`)}`);
 }
@@ -265,9 +281,11 @@ export async function deleteProductAction(f: FormData) {
   const used = Number((await db.query<{ n: number }>("SELECT COUNT(*)::int AS n FROM order_items WHERE product_id = $1", [id])).rows[0].n);
   if (used > 0) {
     await db.query("UPDATE products SET status = 'archived', sale_mode = 'enquiry', updated_at = NOW() WHERE id = $1", [id]);
+    await audit({ type: "product.archive", target: "product", targetId: id, summary: "Product archived instead of deleted (it appears in orders)" });
     redirect(`/admin/products/${id}?ok=${encodeURIComponent("This product appears in orders, so it was archived (hidden) instead of deleted.")}`);
   }
-  await db.query("DELETE FROM products WHERE id = $1", [id]);
+  const gone = (await db.query<{ name: string }>("DELETE FROM products WHERE id = $1 RETURNING name", [id])).rows[0];
+  await audit({ type: "product.delete", target: "product", targetId: id, summary: `Deleted product “${gone?.name ?? "unknown"}”` });
   revalidatePath("/products");
   redirect(`/admin/products?ok=${encodeURIComponent("Product deleted.")}`);
 }
@@ -292,6 +310,7 @@ export async function bulkProductsAction(f: FormData) {
   } else {
     redirect(`${returnTo}${sep}err=${encodeURIComponent("Choose an action.")}`);
   }
+  await audit({ type: "product.bulk", target: "product", targetId: "", summary: msg, details: { action, selected: ids.length } });
   revalidatePath("/products");
   redirect(`${returnTo}${sep}ok=${encodeURIComponent(msg)}`);
 }

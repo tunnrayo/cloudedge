@@ -290,4 +290,86 @@ CREATE TABLE IF NOT EXISTS manual_payments (
 );
 `,
   },
+  {
+    id: 3,
+    name: "admin_security_and_audit",
+    sql: `
+-- Admin sessions live in the database so they can be revoked (logout) and work across several app instances.
+-- Only a keyed hash of the random session token is stored, never the token itself.
+CREATE TABLE IF NOT EXISTS admin_sessions (
+  id           UUID PRIMARY KEY,
+  token_hash   TEXT NOT NULL UNIQUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  last_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  expires_at   TIMESTAMPTZ NOT NULL,
+  revoked_at   TIMESTAMPTZ,
+  revoked_reason TEXT NOT NULL DEFAULT '',
+  ip_hash      TEXT NOT NULL DEFAULT '',
+  user_agent   TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS admin_sessions_expiry_idx ON admin_sessions (expires_at);
+
+-- Failed/successful admin sign-in attempts (keyed hash of the visitor address) for a limit that survives restarts.
+CREATE TABLE IF NOT EXISTS admin_login_attempts (
+  id         BIGSERIAL PRIMARY KEY,
+  ip_hash    TEXT NOT NULL,
+  succeeded  BOOLEAN NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS admin_login_attempts_idx ON admin_login_attempts (ip_hash, created_at DESC);
+
+-- Append-only record of important administrator actions.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id          BIGSERIAL PRIMARY KEY,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  event_type  TEXT NOT NULL,
+  outcome     TEXT NOT NULL CHECK (outcome IN ('success','failure','denied')),
+  actor       TEXT NOT NULL DEFAULT '',
+  target_type TEXT NOT NULL DEFAULT '',
+  target_id   TEXT NOT NULL DEFAULT '',
+  summary     TEXT NOT NULL DEFAULT '',
+  details     JSONB NOT NULL DEFAULT '{}'::jsonb,
+  ip_hash     TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS audit_log_time_idx ON audit_log (created_at DESC);
+CREATE INDEX IF NOT EXISTS audit_log_type_idx ON audit_log (event_type, created_at DESC);
+
+CREATE OR REPLACE FUNCTION audit_log_protect() RETURNS trigger AS $$
+BEGIN
+  RAISE EXCEPTION 'audit_log records cannot be changed or deleted';
+END;
+$$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS audit_log_no_change ON audit_log;
+CREATE TRIGGER audit_log_no_change BEFORE UPDATE OR DELETE ON audit_log FOR EACH ROW EXECUTE FUNCTION audit_log_protect();
+`,
+  },
+  {
+    id: 4,
+    name: "managed_services",
+    sql: `
+-- Services shown on the public website, edited in the admin. The built-in descriptions are copied in ONCE
+-- (see seedServicesIfNeeded); later deployments never overwrite administrator edits.
+CREATE TABLE IF NOT EXISTS services (
+  id           UUID PRIMARY KEY,
+  slug         TEXT NOT NULL UNIQUE,
+  title        TEXT NOT NULL,
+  icon         TEXT NOT NULL DEFAULT 'code',
+  category     TEXT NOT NULL DEFAULT 'Technology services',
+  summary      TEXT NOT NULL DEFAULT '',
+  problem      TEXT NOT NULL DEFAULT '',
+  what         TEXT NOT NULL DEFAULT '',
+  items        JSONB NOT NULL DEFAULT '[]'::jsonb,
+  good_for     JSONB NOT NULL DEFAULT '[]'::jsonb,
+  inquiry_type TEXT NOT NULL,
+  status       TEXT NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','published','inactive')),
+  sort_order   INTEGER NOT NULL DEFAULT 0,
+  price_text   TEXT NOT NULL DEFAULT '',
+  image_id     UUID REFERENCES product_images(id) ON DELETE SET NULL,
+  image_alt    TEXT NOT NULL DEFAULT '',
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS services_status_idx ON services (status, sort_order);
+`,
+  },
 ];

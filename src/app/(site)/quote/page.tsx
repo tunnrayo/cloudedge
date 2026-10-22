@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Icon from "@/components/Icon";
 import InquiryForm from "@/components/InquiryForm";
 import { PageHero } from "@/components/ui";
-import { company, processSteps, services } from "@/lib/site";
+import { company, processSteps } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 import { getProduct } from "@/lib/shop/products";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
 
 export default async function Quote({ searchParams }: { searchParams: Promise<{ service?: string; product?: string }> }) {
   const { service, product: productSlug } = await searchParams;
-  const svc = services.find((s) => s.slug === service);
+  const svc = (await getPublishedServices()).find((s) => s.slug === service);
   const product = productSlug ? await getProduct(productSlug).catch(() => null) : null;
   const defaultType = product ? "Product enquiry" : svc?.inquiryType;
   return (

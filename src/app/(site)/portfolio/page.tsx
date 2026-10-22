@@ -4,11 +4,19 @@ import { Svg } from "@/components/Icon";
 import { Cta, Note, PageHero, ProjectCard } from "@/components/ui";
 import { getProjects } from "@/lib/catalog";
 
-export const metadata: Metadata = {
-  title: "Portfolio",
-  description: "Project showcase for Cloud Edge Technology Services Limited, including clearly labelled demo concepts.",
-  alternates: { canonical: "/portfolio" },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const projects = await getProjects();
+  const demosOnly = projects.length > 0 && projects.every((p) => p.kind === "demo");
+  return {
+    title: "Portfolio",
+    description: projects.length === 0
+      ? "Cloud Edge Technology Services Limited will publish approved client projects here. Contact us to discuss your project."
+      : demosOnly ? "Illustrative demo concepts from Cloud Edge Technology Services Limited. These are not client projects." : "Selected projects from Cloud Edge Technology Services Limited.",
+    alternates: { canonical: "/portfolio" },
+  };
+}
+
+export const dynamic = "force-dynamic";
 
 export default async function Portfolio() {
   const projects = await getProjects();
@@ -17,7 +25,7 @@ export default async function Portfolio() {
   return (
     <>
       <PageHero eyebrow="Portfolio" title="Our work" crumbs={[{ label: "Portfolio" }]}
-        intro="Examples of the kinds of solutions we design and build." />
+        intro={projects.length ? "Examples of the kinds of solutions we design and build." : "We are building our portfolio. Approved client projects will be published here."} />
       <section className="section">
         <div className="container">
           {clients.length > 0 && (
@@ -36,8 +44,11 @@ export default async function Portfolio() {
           {projects.length === 0 && (
             <div className="empty">
               <p><strong>Case studies coming soon.</strong></p>
-              <p>Completed projects will be published here once approved by our clients.</p>
-              <Link className="btn btn-primary" href="/quote">Discuss your project <Svg name="arrow" /></Link>
+              <p>We only publish completed projects with the client&apos;s approval, so nothing is shown here yet. In the meantime, see what we can build for you.</p>
+              <div className="actions" style={{ justifyContent: "center" }}>
+                <Link className="btn btn-primary" href="/quote">Discuss your project <Svg name="arrow" /></Link>
+                <Link className="btn btn-outline" href="/services">Explore our services</Link>
+              </div>
             </div>
           )}
         </div>

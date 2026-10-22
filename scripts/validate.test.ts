@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { normalize, validate } from "../src/lib/validate.ts";
-import { createSessionToken, verifySessionToken, passwordMatches, adminConfig } from "../src/lib/auth.ts";
+import { passwordMatches, adminConfig } from "../src/lib/auth.ts";
 
 const ok = { name: "Ada Obi", email: "ada@example.com", type: "General inquiry", message: "I would like to discuss a website." };
 const quote = { ...ok, mode: "quote", type: "Website design & development", scope: "A five page company website with a contact form." };
@@ -29,15 +29,7 @@ test("control characters stripped", () => assert.equal(normalize({ ...ok, name: 
 test("non-object input is safe", () => assert.ok(Object.keys(validate(normalize(null))).length > 0));
 
 const SECRET = "x".repeat(40);
-test("session token round-trip", async () => assert.equal(await verifySessionToken(await createSessionToken(SECRET), SECRET), true));
-test("session token rejects wrong secret", async () => assert.equal(await verifySessionToken(await createSessionToken(SECRET), "y".repeat(40)), false));
-test("session token rejects tampering", async () => {
-  const t = await createSessionToken(SECRET);
-  const [p, s] = t.split(".");
-  assert.equal(await verifySessionToken(`${p}x.${s}`, SECRET), false);
-  assert.equal(await verifySessionToken("garbage", SECRET), false);
-  assert.equal(await verifySessionToken(undefined, SECRET), false);
-});
+// (Signed-cookie session tests were replaced by database-session tests in scripts/platform.test.ts: valid, forged, expired, idle, revoked.)
 test("password comparison", async () => {
   assert.equal(await passwordMatches("correct horse", "correct horse", SECRET), true);
   assert.equal(await passwordMatches("wrong", "correct horse", SECRET), false);
@@ -51,4 +43,12 @@ test("admin locked without strong config", () => {
   process.env.ADMIN_SESSION_SECRET = SECRET;
   assert.equal(adminConfig().ok, true);
   process.env = before;
+});
+
+test("single-line fields cannot carry line breaks (header-injection hygiene); free-text boxes keep them", () => {
+  const n = normalize({ ...ok, name: "Ada\r\nBcc: evil@x.com", organization: "Acme\nLtd", message: "line one\nline two is long enough", scope: "a\nb" });
+  assert.equal(n.name, "Ada Bcc: evil@x.com");
+  assert.equal(n.organization, "Acme Ltd");
+  assert.ok(n.message.includes("\n") && n.scope.includes("\n"));
+  assert.ok(validate(normalize({ ...ok, email: "a@b.com\r\nBcc: x@y.com" })).email);
 });

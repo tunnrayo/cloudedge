@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Svg } from "@/components/Icon";
 import { Cta, Note, PageHero, SectionHead, ServiceCard } from "@/components/ui";
-import { processSteps, services } from "@/lib/site";
+import { processSteps } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 
 export const metadata: Metadata = {
   title: "Services",
@@ -10,7 +11,10 @@ export const metadata: Metadata = {
   alternates: { canonical: "/services" },
 };
 
-export default function Services() {
+export const dynamic = "force-dynamic";
+
+export default async function Services() {
+  const services = await getPublishedServices();
   return (
     <>
       <PageHero eyebrow="Services" title="Technology services for growing businesses" crumbs={[{ label: "Services" }]}

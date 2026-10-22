@@ -1,4 +1,25 @@
-# Project Status — v0.4.0 (22 October 2026)
+# Project Status — v0.5.0 (22 October 2026)
+
+## What changed in v0.5.0 (platform hardening) — all implemented AND tested locally
+| | Item | State |
+|---|---|---|
+| ✅ | Local database "ENOENT mkdir .data/pglite" bug | Fixed, regression-tested, verified on a clean start of the real app |
+| ✅ | Database-backed admin sessions (revocable, 8 h / 2 h idle, rotation, cross-instance sign-in limit) | Completed & tested (forged/expired/idle/revoked cookies, logout, brute force) |
+| ✅ | Append-only audit log + admin page (filters, dates, pagination, redaction) | Completed & tested |
+| ✅ | Admin Health centre + JSON report; minimal public `/api/health` | Completed & tested (healthy, unhealthy DB, access control, no secrets) |
+| ✅ | Admin-managed services (draft/published/inactive, order, images, preview, safe delete, one-time seed) | Completed & tested |
+| ✅ | Portfolio demo concepts hidden by default (`SHOW_DEMO_PROJECTS`) with polished empty state | Completed & tested |
+| ✅ | API hardening (content type, size, same-origin, 404 for missing order link, cart quote crash + rate limit) | Completed & tested |
+| ✅ | Payment-safety checks (invalid signature, repeated events, wrong amount/currency, failed payment, unknown reference) | Completed & tested against the **mock** Paystack |
+| ✅ | Email core (retry-safe, header-injection safe, honest statuses) | Completed & tested against a **mock** Resend |
+| ✅ | Railway readiness documentation (DEPLOYMENT.md) | Written — **not deployed, nothing run on Railway** |
+| ⚠️ | Privacy/Terms/Refund pages | Reviewed and unsupported claims removed; still **draft, need Nigerian legal review** |
+| ⏳ | Real Paystack, real Resend, Railway deployment | NOT TESTED — need your accounts |
+
+Branch `main`, last commit `dafe111` (v0.4.0). **v0.5.0 changes are in the working tree, not committed and not pushed** (pushing needs your approval).
+
+---
+# (v0.4.0 summary, still accurate)
 
 **Business model now implemented: manual software sourcing reseller.** Customers browse the catalogue, send a sourcing
 request (no payment), receive a quotation, accept it, and only then pay. Cloud Edge sources the product from external
@@ -37,8 +58,10 @@ suppliers after payment and records the fulfilment evidence.
 | Live payments | **No — not yet.** Needs: activated Paystack business account, live key, webhook, a full test-mode run on the deployed site, then `PAYMENTS_LIVE_ENABLED=true`. Bank-transfer payments recorded by the admin work without Paystack. |
 
 ## Known limitations
-- Rate limiting is in memory (per server instance; resets on restart).
-- One shared admin password (no per-staff accounts/audit of which staff member acted).
+- Rate limiting for **public forms** is in memory (per server instance; resets on restart). With one Railway instance this is fine; with several, each has its own counter. Admin sign-in limits are in the database and work across instances.
+- Admin sign-in limit is also per IP: behind a proxy all visitors could share one IP if the proxy does not pass `x-forwarded-for`; Railway does pass it.
+- **Single administrator login** (one shared password, one role). The audit log shows *which session* acted (`admin#xxxxxxxx`), not which person. Per-staff accounts were deliberately not built; add them before giving access to several people.
+- Product/service images are served publicly by their random id (`/api/images/<uuid>`); anyone who knows an id can view it. Do not upload private images.
 - No password-reset email for customers yet.
 - Quotations are in NGN only (supplier currency is converted with the rate the admin records).
 - Expired quotations are closed when an admin presses "Close expired quotations" (customers already cannot accept an expired quote).
@@ -46,9 +69,10 @@ suppliers after payment and records the fulfilment evidence.
 - Orders created before v0.4.0 that were awaiting payment were moved to "Reviewing request" (they had no quotation).
 
 ## Known errors
-None found: typecheck, lint, 44 unit tests, production build, 37 + 109 end-to-end checks pass.
+None found: typecheck, lint, 93 unit tests, production build, 37 + 116 + 100 end-to-end checks pass. `npm audit` (dev tools only) lists 5 high advisories in the lint tooling; production dependencies have 0.
 
 ## Next actions (owner)
+0. Review the v0.5.0 changes and approve a commit/push (nothing has been pushed).
 1. Create the Railway project + PostgreSQL and set variables (DEPLOYMENT.md Step 1).
 2. Add the Paystack **test** key and webhook; run one full request → quote → accept → pay on the deployed site.
 3. Add Resend + a verified domain so quotations and updates are emailed.

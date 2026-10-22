@@ -1,16 +1,18 @@
-/** GET /api/health — used by Railway's health check. Reports whether the database answers. */
+/**
+ * GET /api/health — public, minimal, used by Railway's health check.
+ * It really queries the database. It reveals nothing else: detailed diagnostics are on the admin Health page.
+ */
 import { getDb } from "@/lib/db";
-import { paystackMode } from "@/lib/shop/paystack";
 
 export const dynamic = "force-dynamic";
+const headers = { "Cache-Control": "no-store" };
 
 export async function GET() {
   try {
-    const db = await getDb();
-    await db.query("SELECT 1");
-    return Response.json({ ok: true, database: db.kind, payments: paystackMode() }, { headers: { "Cache-Control": "no-store" } });
+    await (await getDb()).query("SELECT 1");
+    return Response.json({ ok: true }, { headers });
   } catch (e) {
-    console.error("[health] database check failed:", (e as Error).message);
-    return Response.json({ ok: false, database: "unavailable" }, { status: 503, headers: { "Cache-Control": "no-store" } });
+    console.error("[health] database check failed:", (e as Error).name);
+    return Response.json({ ok: false }, { status: 503, headers });
   }
 }

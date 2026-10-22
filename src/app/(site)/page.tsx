@@ -4,7 +4,8 @@ import HeroArt from "@/components/HeroArt";
 import Icon, { Svg } from "@/components/Icon";
 import { Cta, FaqList, SectionHead, ServiceCard } from "@/components/ui";
 import ProductCard from "@/components/shop/ProductCard";
-import { company, faqs, processSteps, services, solutions, values } from "@/lib/site";
+import { company, faqs, processSteps, solutions, values } from "@/lib/site";
+import { getPublishedServices } from "@/lib/services";
 import { listProducts, categoryCounts, categorySlug } from "@/lib/shop/products";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export const dynamic = "force-dynamic";
 export const metadata = { alternates: { canonical: "/" } };
 
 export default async function Home() {
+  const services = await getPublishedServices();
   // The shop sections are skipped (not broken) if the database is temporarily unavailable.
   const [featured, cats] = await Promise.all([
     listProducts({ sort: "featured" }).then((all) => all.filter((p) => p.featured).slice(0, 6)).catch(() => []),

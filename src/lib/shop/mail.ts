@@ -6,28 +6,19 @@
 import "server-only";
 import { company } from "@/lib/site";
 import { nairaFromKobo } from "@/lib/shop/format";
+import { sendViaResend } from "@/lib/email-core";
 
 export type EmailResult = "sent" | "failed" | "not_configured";
 export const shopEmailConfigured = () => Boolean(process.env.RESEND_API_KEY && (process.env.SHOP_FROM_EMAIL || process.env.INQUIRY_FROM_EMAIL));
 
 const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
-const oneLine = (s: string) => s.replace(/[\r\n]+/g, " ").slice(0, 150);
 
 export async function sendEmail(to: string, subject: string, html: string, text: string): Promise<EmailResult> {
   if (!shopEmailConfigured()) return "not_configured";
-  try {
-    const res = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: process.env.SHOP_FROM_EMAIL || process.env.INQUIRY_FROM_EMAIL, to: [to], reply_to: company.email.toLowerCase(), subject: oneLine(subject), html, text }),
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!res.ok) { console.error(`[mail] provider rejected (HTTP ${res.status})`); return "failed"; }
-    return "sent";
-  } catch (e) {
-    console.error("[mail] send failed:", (e as Error).name);
-    return "failed";
-  }
+  return sendViaResend(
+    { from: process.env.SHOP_FROM_EMAIL || process.env.INQUIRY_FROM_EMAIL || "", to, replyTo: company.email.toLowerCase(), subject, html, text },
+    { apiKey: process.env.RESEND_API_KEY || "", baseUrl: process.env.RESEND_BASE_URL },
+  );
 }
 
 type Item = { product_name: string; quantity: number; billing_label: string; option_label?: string; option_value?: string; line_total_kobo?: number | string };

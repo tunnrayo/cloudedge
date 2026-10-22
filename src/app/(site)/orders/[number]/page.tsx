@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { notFound } from "next/navigation";
 import { PageHero } from "@/components/ui";
 import PayButton from "@/components/shop/PayButton";
 import ProductImage from "@/components/shop/ProductImage";
@@ -19,17 +20,8 @@ export default async function OrderPage({ params, searchParams }: { params: Prom
   const [{ number }, sp] = await Promise.all([params, searchParams]);
   const order = await getOrderByNumber(number);
   const me = await currentCustomer();
-  if (!order || !canView(order, sp.t, me?.id ?? null)) {
-    return (
-      <>
-        <PageHero title="Request not found" />
-        <section className="section"><div className="container narrow">
-          <p>We could not open this request. Use the link from your acknowledgement email, or <Link href="/account/login">sign in</Link> if you sent it with an account.</p>
-          <p>Need help? Email <a href={`mailto:${company.email}`}>{company.email}</a>.</p>
-        </div></section>
-      </>
-    );
-  }
+  // Same answer whether the request does not exist or the link is wrong: a real 404, no hint which one.
+  if (!order || !canView(order, sp.t, me?.id ?? null)) notFound();
   const [items, events, refunds, quotes] = await Promise.all([orderItems(order.id), orderEvents(order.id, true), orderRefunds(order.id), getQuotes(order.id)]);
   const status = order.status as OrderStatus;
   const shownQuotes = quotes.filter((q) => q.status !== "draft").map(publicQuote);

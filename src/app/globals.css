@@ -520,3 +520,8 @@ dl.sum .total { font-family: var(--font-head); font-weight: 700; color: var(--na
 .money-row { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.92rem; }
 .money-row b { font-family: var(--font-head); }
 .shop-layout > *, .cart-layout > *, .pdp > * { min-width: 0; }
+
+/* Neutral status flag (NOT CONFIGURED / NOT TESTED) */
+.flag.muted { background: #eef2f8; color: #45536d; border: 1px solid #d5ddeb; }
+
+.service-hero-img { width: 100%; height: auto; max-height: 360px; object-fit: cover; border-radius: 12px; margin-bottom: 20px; }
